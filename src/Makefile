@@ -34,6 +34,7 @@ MODULES = \
 	ModIE_Interface.o\
 	ModFiles.o\
 	ModMagnit.o\
+	ModImp.o\
 	ModConductance.o
 
 #

@@ -6,6 +6,7 @@ module ModConductance
 
   use ModIonosphere
   use ModMagnit, ONLY: magnit_gen_fluxes
+  use ModImp, ONLY: imp_gen_fluxes
 
   implicit none
   save
@@ -19,7 +20,7 @@ module ModConductance
   ! Logicals to control what conductance sources are used.
   logical :: DoUseEuvCond=.true., DoUseAurora=.true., DoUseDiffI=.true., &
        DoUseDiffE=.true., DoUseMono=.true., DoUseBbnd=.true., &
-       UsePrecipSmoothing=.true.
+       UsePrecipSmoothing=.true., ImBeenCoupled=.false.
 
   ! Use IPE conductances?
   logical:: UseIpeConductance = .false.
@@ -44,7 +45,8 @@ module ModConductance
        eLimitScale=10. ! Sets scaling factor for above eCondLimit
 
   ! Floor values for GM density and pressure, SI units:
-  real, parameter :: GmRhoFloor = 1E-21, GmPFloor = 1E-13, GMPeFloor = 1E-13
+  real, parameter :: GmRhoFloor = 1E-21, GmPFloor = 1E-13, GMPeFloor = 1E-13, &
+                     ImEfluxFloor = 1E-3, ImAveEFloor = 1E-6
 
   ! Arrays to hold components of conductance - 1 array
   ! for each source of conductance.  Long term storage for output files.
@@ -158,31 +160,32 @@ contains
           call flux_to_sigma(IONO_nTheta, IONO_nPsi, AvgEMono_II, &
                1000.*EFluxMono_II, SigmaHalMono_II, SigmaPedMono_II)
 
-       case('MAGNIT')
-          ! MAGNIT sets precipitating fluxes.
-          call magnit_gen_fluxes(NameHemiIn, &
-               AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
-               EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II, &
-               theta)
+       case('MAGNIT', 'IMP')
+           select case(NameAuroraMod)
+           case('MAGNIT')
+              ! MAGNIT sets precipitating fluxes.
+              call magnit_gen_fluxes(NameHemiIn, &
+                   AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
+                   EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II, &
+                   theta)
+           case ('IMP') ! New IM Precip Model
+              if (ImBeenCoupled) call imp_gen_fluxes(NameHemiIn, &
+                       AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
+                       EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II, theta)
+            end select
 
-          if(DoTest) then
-              write(*,*)'Ion Energy Flux'
-              write(*,'(f0.30)')MAXVAL(EfluxDiffi_II),MINVAL(EfluxDiffi_II)
-              write(*,*)'Ion Average Energy'
-              write(*,'(f0.30)')MAXVAL(AvgEDiffi_II),MINVAL(AvgEDiffi_II)
-              write(*,*)'Electron Energy Flux'
-              write(*,'(f0.30)')MAXVAL(EfluxDiffe_II),MINVAL(EfluxDiffe_II)
-              write(*,*)'Electron Average Energy'
-              write(*,'(f0.30)')MAXVAL(AvgEDiffe_II),MINVAL(AvgEDiffe_II)
-              write(*,*)'Discrete Energy Flux'
-              write(*,'(f0.30)')MAXVAL(EfluxMono_II),MINVAL(EfluxMono_II)
-              write(*,*)'Discrete Average Energy'
-              write(*,'(f0.30)')MAXVAL(AvgEMono_II),MINVAL(AvgEMono_II)
-              write(*,*)'Broadband Energy Flux'
-              write(*,'(f0.30)')MAXVAL(EfluxBbnd_II),MINVAL(EfluxBbnd_II)
-              write(*,*)'Broadband Average Energy'
-              write(*,'(f0.30)')MAXVAL(AvgEBbnd_II),MINVAL(AvgEBbnd_II)
-          end if
+            if(DoTest) then
+              if (NameHemiIn == 'north') then
+                 write(*,*)'Ion Energy Flux', MAXVAL(EfluxDiffi_II),MINVAL(EfluxDiffi_II)
+                 write(*,*)'Ion Average Energy', MAXVAL(AvgEDiffi_II),MINVAL(AvgEDiffi_II)
+                 write(*,*)'Electron Energy Flux', MAXVAL(EfluxDiffe_II),MINVAL(EfluxDiffe_II)
+                 write(*,*)'Electron Average Energy', MAXVAL(AvgEDiffe_II),MINVAL(AvgEDiffe_II)
+                 write(*,*)'Discrete Energy Flux', MAXVAL(EfluxMono_II),MINVAL(EfluxMono_II)
+                 write(*,*)'Discrete Average Energy', MAXVAL(AvgEMono_II),MINVAL(AvgEMono_II)
+                 write(*,*)'Broadband Energy Flux', MAXVAL(EfluxBbnd_II),MINVAL(EfluxBbnd_II)
+                 write(*,*)'Broadband Average Energy', MAXVAL(AvgEBbnd_II),MINVAL(AvgEBbnd_II)
+                 end if
+              end if
 
           ! Convert fluxes to conductances:
           ! Diffuse flux is only calculated separately if the total electron
@@ -210,28 +213,15 @@ contains
           end if
 
           if(DoTest) then
-              write(*,*)'Ion Hall Conductance'
-              write(*,'(f0.30)')MAXVAL(SigmaHalDiffi_II), &
+              if (NameHemiIn == 'north') then
+              write(*,*)'Ion Hall Conductance', MAXVAL(SigmaHalDiffi_II), &
                       MINVAL(SigmaHalDiffi_II)
-              write(*,*)'Ion Pedersen Conductance'
-              write(*,'(f0.30)')MAXVAL(SigmaPedDiffi_II), &
-                      MINVAL(SigmaPedDiffi_II)
-              write(*,*)'Electron Hall Conductance'
-              write(*,'(f0.30)')MAXVAL(SigmaHalDiffe_II), &
+              write(*,*)'Electron Hall Conductance', MAXVAL(SigmaHalDiffe_II), &
                       MINVAL(SigmaHalDiffe_II)
-              write(*,*)'Electron Pedersen Conductance'
-              write(*,'(f0.30)')MAXVAL(SigmaPedDiffe_II), &
-                      MINVAL(SigmaPedDiffe_II)
-              write(*,*)'Discrete Hall Conductance'
-              write(*,'(f0.30)')MAXVAL(SigmaHalMono_II),MINVAL(SigmaHalMono_II)
-              write(*,*)'Discrete Pedersen Conductance'
-              write(*,'(f0.30)')MAXVAL(SigmaPedMono_II),MINVAL(SigmaPedMono_II)
-              write(*,*)'Broadband Hall Conductance'
-              write(*,'(f0.30)')MAXVAL(SigmaHalBbnd_II),MINVAL(SigmaHalBbnd_II)
-              write(*,*)'Broadband Pedersen Conductance'
-              write(*,'(f0.30)')MAXVAL(SigmaPedBbnd_II),MINVAL(SigmaPedBbnd_II)
-          end if
-
+              write(*,*)'Discrete Hall Conductance', MAXVAL(SigmaHalMono_II),MINVAL(SigmaHalMono_II)
+              write(*,*)'Broadband Hall Conductance', MAXVAL(SigmaHalBbnd_II),MINVAL(SigmaHalBbnd_II)
+              end if
+           end if
        case default
           call CON_stop(NameSub//': Unrecognized auroral model - ' &
                //NameAuroraMod)

@@ -65,7 +65,6 @@ module ModMagnit
         IONO_South_p, IONO_South_rho, IONO_NORTH_JR, IONO_SOUTH_JR, &
         IONO_NORTH_invB, IONO_SOUTH_invB, IONO_NORTH_Joule, &
         IONO_SOUTH_Joule, IONO_North_Pe, IONO_South_Pe
-    use ModPlanetConst, ONLY: rPlanet_I, IonoHeightPlanet_I, Earth_
 
     ! Given magnetospheric density, pressure, and FACs, calculate diffuse and
     ! monoenergetic precipitating fluxes.
@@ -87,9 +86,8 @@ module ModMagnit
     ! Set arrays to hold magnetospheric values.
     real, dimension(IONO_nTheta, IONO_nPsi) :: &
         MagP_II, MagNp_II, MagPe_II, MagNe_II, NfluxDiffe_II, NfluxDiffi_II, &
-        NfluxMono_II, NfluxBbnd_II, OCFL_II, PrecipRatio_II=0, Potential_II=0, &
-        MirrorRatio_II=0, VExponent_II=0, PotentialTerm_II=0, FAC_II=0, &
-        Joule_II=0, Poynting_II=0, ElectronTemp_II=0, OCFL_flip_II=0
+        NfluxBbnd_II, OCFL_II, FAC_II=0, Joule_II=0, Poynting_II=0, &
+            ElectronTemp_II=0, OCFL_flip_II=0
 
     integer :: j
 
@@ -157,44 +155,9 @@ module ModMagnit
     ! Recalc to make consistent with ConeFactors (and get units of keV)
     AvgEDiffe_II = EfluxDiffe_II / (NfluxDiffe_II * cKEV)
 
-    ! Calculate discrete electron precipitation
-    ! Calculate Nflux from current
-    Potential_II = 0
-    NfluxMono_II = FAC_II / cElectronCharge
-    ! Calculate Parallel Potential Drop
-    ! Calculate ratio of diffuse to monoenergetic precipitation
-    PrecipRatio_II = NfluxMono_II / NfluxDiffe_II
-
-    ! Calculate ratio of ionospheric magnetic field to plasma sheet
-    ! magnetic field
-    MirrorRatio_II = (rPlanet_I(Earth_) / (sin(LatIn_II)**2 * &
-            (rPlanet_I(Earth_) + IonoHeightPlanet_I(Earth_))))**3 * &
-            sqrt(1 + 3*cos(LatIn_II)**2)
-
-    ! Potential calculations only valid where 1 <= NumCoefficient <= MirrorRatio
-    where(1 <= PrecipRatio_II .and. PrecipRatio_II < MirrorRatio_II .and. &
-          OCFL_II > 0)
-      ! Put it all together into potential
-      Potential_II = ElectronTemp_II / cElectronCharge * (1 - MirrorRatio_II) &
-              * LOG((MirrorRatio_II - PrecipRatio_II) / (MirrorRatio_II - 1))
-    elsewhere
-      NfluxMono_II = NfluxDiffe_II
-    end where
-    ! Split up large calculation into a few steps
-    ! Calculate large potential exponent
-    VExponent_II = EXP(-cElectronCharge * Potential_II / ((ElectronTemp_II) * &
-            (MirrorRatio_II - 1)))
-    ! Calculate product term
-    PotentialTerm_II = ((1 - VExponent_II) * ConeEfluxMono / &
-         (1 + ((1 - 1/MirrorRatio_II) * VExponent_II)) * cElectronCharge * &
-         Potential_II) + AvgEDiffe_II * cKEV
-
-    ! Plug into equation for EFlux
-    EfluxMono_II = NfluxMono_II * PotentialTerm_II
-
-    ! Calculate Avg E in keV
-    AvgEMono_II = EfluxMono_II / (NfluxDiffe_II * cKEV)
-    !
+    ! Calculate monoenergetic electron precipitation
+    call monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, &
+            AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II)
 !    ! Calculate broadband electron precipitation
 !    ! Note: Joule Heating is in SI Units = W/m2
      ! Need to figure out where this value came from,
@@ -212,6 +175,62 @@ module ModMagnit
 
   end subroutine magnit_gen_fluxes
   !============================================================================
+  subroutine monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, &
+          ElectronTemp_II, AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II)
+
+    use ModConst, ONLY: cKEV
+    use ModPlanetConst, ONLY: rPlanet_I, IonoHeightPlanet_I, Earth_
+
+    real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: EfluxMono_II, &
+                                                            AvgEMono_II
+
+
+    ! Import Hemispheric Latitudes for Magnetic Field Calculations
+    real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: FAC_II, LatIn_II, &
+            NfluxDiffe_II, AvgEDiffe_II, ElectronTemp_II, OCFL_II
+
+    real, dimension(IONO_nTheta, IONO_nPsi) :: PrecipRatio_II=0, &
+            Potential_II=0, MirrorRatio_II=0, VExponent_II=0, &
+            PotentialTerm_II=0, NfluxMono_II
+    !--------------------------------------------------------------------------
+    ! Calculate discrete electron precipitation
+    ! Calculate Nflux from current
+    Potential_II = 0
+    NfluxMono_II = FAC_II / cElectronCharge
+    ! Calculate Parallel Potential Drop
+    ! Calculate ratio of diffuse to monoenergetic precipitation
+    PrecipRatio_II = NfluxMono_II / NfluxDiffe_II
+
+    ! Calculate ratio of ionospheric magnetic field to plasma sheet
+    ! magnetic field
+    MirrorRatio_II = (rPlanet_I(Earth_) / (sin(LatIn_II)**2 * &
+            (rPlanet_I(Earth_) + IonoHeightPlanet_I(Earth_))))**3 * &
+            sqrt(1 + 3*cos(LatIn_II)**2)
+
+    ! Potential calculations only valid where 1 <= NumCoefficient <= MirrorRatio
+    where(1 <= PrecipRatio_II .and. PrecipRatio_II < MirrorRatio_II .and. &
+            OCFL_II > 0)
+      ! Put it all together into potential
+      Potential_II = ElectronTemp_II / cElectronCharge * (1 - MirrorRatio_II) &
+              * LOG((MirrorRatio_II - PrecipRatio_II) / (MirrorRatio_II - 1))
+    elsewhere
+      NfluxMono_II = NfluxDiffe_II
+    end where
+    ! Split up large calculation into a few steps
+    ! Calculate large potential exponent
+    VExponent_II = EXP(-cElectronCharge * Potential_II / ((ElectronTemp_II) * &
+            (MirrorRatio_II - 1)))
+    ! Calculate product term
+    PotentialTerm_II = ((1 - VExponent_II) * ConeEfluxMono / &
+            (1 + ((1 - 1/MirrorRatio_II) * VExponent_II)) * cElectronCharge * &
+            Potential_II) + AvgEDiffe_II * cKEV
+
+    ! Plug into equation for EFlux
+    EfluxMono_II = NfluxMono_II * PotentialTerm_II
+
+    ! Calculate Avg E in keV
+    AvgEMono_II = EfluxMono_II / (NfluxDiffe_II * cKEV)
+  end subroutine monoenergetic_flux
 
 end module ModMagnit
 !==============================================================================
