@@ -1311,7 +1311,7 @@ contains
     use ModProcIE
     use ModIonosphere
     use ModMpi
-    use ModConductance, ONLY: ImBeenCoupled, ImEfluxFloor, ImAveEFloor
+    use ModConductance, ONLY: IsImCoupled, ImEfluxFloor, ImAveEFloor
 
     !--------------------------------------------------------------------------
     integer iError, i
@@ -1386,7 +1386,7 @@ contains
     end if
 
     IsFilledWithIm = .false.
-    ImBeenCoupled = .true.
+    IsImCoupled = .true.
 
   end subroutine IE_put_from_im_complete
   !============================================================================

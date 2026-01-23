@@ -20,7 +20,7 @@ module ModConductance
   ! Logicals to control what conductance sources are used.
   logical :: DoUseEuvCond=.true., DoUseAurora=.true., DoUseDiffI=.true., &
        DoUseDiffE=.true., DoUseMono=.true., DoUseBbnd=.true., &
-       UsePrecipSmoothing=.true., ImBeenCoupled=.false.
+       UsePrecipSmoothing=.true., IsImCoupled=.false.
 
   ! Use IPE conductances?
   logical:: UseIpeConductance = .false.
@@ -169,7 +169,7 @@ contains
                    EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II, &
                    theta)
            case ('IMP') ! New IM Precip Model
-              if (ImBeenCoupled) call imp_gen_fluxes(NameHemiIn, &
+              if (IsImCoupled) call imp_gen_fluxes(NameHemiIn, &
                        AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
                        EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II, theta)
             end select
