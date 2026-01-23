@@ -137,9 +137,12 @@ contains
       case('CHECK')
          IsUninitialized=.false.
 
+         ! Ensures no use of smoothing for non-physical (empirical) conductance
+         ! models
          if(NameAuroraMod /= 'MAGNIT' .and. NameAuroraMod /= 'IMP') then
              UsePrecipSmoothing = .false.
          end if
+         ! Turns on IM precipitation flag when IMP is being used
          if(NameAuroraMod == 'IMP') then
              DoUseIMPrecip = .true.
              write(*,*) 'WARNING, IMP Auroral Model is unfinished'
