@@ -169,9 +169,9 @@ LatFullIpe, a linear combination of the conductances between
 LatFullIpe and LatFullRim, and RIM conductances from LatFullRim to 90
 degrees.
 
-By default UseIpeConductance is false. 
+By default UseIpeConductance is false.
 </command>
-  
+
 <command name="SOLAREUV">
   <parameter name="DoUseEuvCond" type="logical" default="T"/>
   <if expr="$DoUseEuvCond">
@@ -699,6 +699,19 @@ for &lt;= 40 keV but this formulation should not be used in its current form.
 eCondLimit defaults to 10000, as to effectively be irrelevant.
 eLimitScale defaults to 10.0 keV (i.e., an excess in energy of 10keV would decay down by $1/e$).
 </command>
+
+<command name="IMSPECTRUM">
+  <parameter name="DoUseIMSpectrum" type="logical" default="F"/>
+
+  #IMSPECTRUM
+  F            DoUseIMSpectrum
+
+  Currently not implemented. Will be used to optionally couple full IM
+    energy spectra to IE for IMP aurora model when not coupled with UA.
+
+</command>
+
+
 
 <command name="BOUNDARY">
 	<parameter name="LatBoundary" type="real" min="0" max="90" default="10"/>
