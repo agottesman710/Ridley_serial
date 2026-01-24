@@ -301,12 +301,12 @@ subroutine ionosphere_init
   IONO_NORTH_BBND_Ave_E = 0.00
   IONO_SOUTH_BBND_Ave_E = 0.00
 
-  IONO_NORTH_im_EFlux = 0.00
-  IONO_SOUTH_im_EFlux = 0.00
-  IONO_NORTH_im_jr = 0.00
-  IONO_SOUTH_im_jr = 0.00
-  IONO_NORTH_im_AveE = 0.00
-  IONO_SOUTH_im_AveE = 0.00
+  if(allocated(IONO_NORTH_im_EFlux)) IONO_NORTH_im_EFlux = 0.00
+  if(allocated(IONO_SOUTH_im_EFlux)) IONO_SOUTH_im_EFlux = 0.00
+  if(allocated(IONO_NORTH_im_jr))    IONO_NORTH_im_jr = 0.00
+  if(allocated(IONO_SOUTH_im_jr))    IONO_SOUTH_im_jr = 0.00
+  if(allocated(IONO_NORTH_im_AveE))  IONO_NORTH_im_AveE = 0.00
+  if(allocated(IONO_SOUTH_im_AveE))  IONO_SOUTH_im_AveE = 0.00
   IsFilledWithIm = .false.
 
   IONO_NORTH_Joule = 0.0
