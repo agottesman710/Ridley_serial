@@ -1174,7 +1174,6 @@ contains
     IsNewInput = .true.
 
   end subroutine IE_put_from_im
-
   !============================================================================
 
   subroutine IE_get_info_for_im(use_ua, nEngInput, nVarImIe)
@@ -1186,7 +1185,6 @@ contains
     logical,intent(in) :: use_ua
     integer, intent(in) :: nEngInput
     integer,intent(out) :: nVarImIe
-
 
     character(len=*), parameter:: NameSub = 'IE_get_info_for_im'
     !--------------------------------------------------------------------------

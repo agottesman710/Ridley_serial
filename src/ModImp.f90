@@ -6,7 +6,7 @@
 
 module ModImp
 
-  Use ModIonosphere, ONLY: IONO_nTheta, IONO_nPsi
+  use ModIonosphere, ONLY: IONO_nTheta, IONO_nPsi
 
   use ModUtilities, ONLY: CON_stop, CON_set_do_test
 
@@ -14,7 +14,7 @@ module ModImp
   save
 
   contains
-  !===========================================================================
+  !============================================================================
   subroutine imp_gen_fluxes(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II, &
           AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II,&
           EfluxBbnd_II, LatIn_II)
@@ -35,9 +35,9 @@ module ModImp
               FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II
 
       character(len=*), intent(in) :: NameHemiIn
-      character(len=*), parameter:: NameSub = 'imp_gen_fluxes'
 
-      !-------------------------------------------------------------------------
+    character(len=*), parameter:: NameSub = 'imp_gen_fluxes'
+    !--------------------------------------------------------------------------
       ! Call correct IMP model based on filled inputs
       if (DoUseIMSpectrum) then
           call imp_spectral_flux(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II, &
@@ -69,6 +69,7 @@ module ModImp
               AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II)
 
       contains
+    !==========================================================================
       !-----------------------------------------------------------------------
       subroutine imp_integrated_flux(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II,&
               AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, &
@@ -85,8 +86,8 @@ module ModImp
               EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II
 
           character(len=*), intent(in) :: NameHemiIn
-          character(len=*), parameter:: NameSub = 'imp_integrated_flux'
-          !---------------------------------------------------------------------
+      character(len=*), parameter:: NameSub = 'imp_integrated_flux'
+      !------------------------------------------------------------------------
           if (trim(NameHemiIn) == 'south') then
               AvgEDiffe_II = iono_south_im_aveeElec / 1000.0 ! eV to keV
               EfluxDiffe_II = iono_south_im_efluxElec / 1000.0 ! mW/m^2 to W/m^2
@@ -103,7 +104,7 @@ module ModImp
            end if
 
       end subroutine imp_integrated_flux
-      !=======================================================================
+    !==========================================================================
       subroutine imp_spectral_flux(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II, &
               AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, &
               EfluxMono_II, EfluxBbnd_II)
@@ -118,10 +119,13 @@ module ModImp
                   EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II
 
           character(len=*), intent(in) :: NameHemiIn
-          character(len=*), parameter:: NameSub = 'imp_spectral_flux'
-          !---------------------------------------------------------------------
+      character(len=*), parameter:: NameSub = 'imp_spectral_flux'
+      !------------------------------------------------------------------------
           call CON_stop(NameSub//' not yet implemented!')
       end subroutine imp_spectral_flux
+    !==========================================================================
   end subroutine imp_gen_fluxes
+  !============================================================================
 
 end module ModImp
+!==============================================================================

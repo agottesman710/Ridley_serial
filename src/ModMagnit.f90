@@ -184,7 +184,6 @@ module ModMagnit
     real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: EfluxMono_II, &
                                                             AvgEMono_II
 
-
     ! Import Hemispheric Latitudes for Magnetic Field Calculations
     real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: FAC_II, LatIn_II, &
             NfluxDiffe_II, AvgEDiffe_II, ElectronTemp_II, OCFL_II
@@ -231,6 +230,7 @@ module ModMagnit
     ! Calculate Avg E in keV
     AvgEMono_II = EfluxMono_II / (NfluxDiffe_II * cKEV)
   end subroutine monoenergetic_flux
+  !============================================================================
 
 end module ModMagnit
 !==============================================================================
