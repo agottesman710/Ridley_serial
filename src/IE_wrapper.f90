@@ -652,12 +652,12 @@ contains
   !============================================================================
 
   subroutine IE_get_for_ua(Buffer_IIV, iSize, jSize, nVarIn, NameVar_V, &
-       iBlock,tSimulation)
+                           tSimulation)
 
     use ModProcIE
     use ModIonosphere
 
-    integer,          intent(in)  :: iSize, jSize, nVarIn, iBlock
+    integer,          intent(in)  :: iSize, jSize, nVarIn
     real,             intent(out) :: Buffer_IIV(iSize,jSize,nVarIn)
     character (len=*),intent(in)  :: NameVar_V(nVarIn)
     real,             intent(in)  :: tSimulation
@@ -674,7 +674,6 @@ contains
 
     if(DoTestMe)then
        write(*,*)NameSub//': Gathering data for UA at t=', tSimulation
-       write(*,*)NameSub//': Current hemisphere block = ', iBlock
        write(*,*)NameSub//': Variable list = '
        do iVar=1, nVarIn
           write(*,'(10x,i2.2,5x,a)')iVar, NameVar_V(iVar)
@@ -683,20 +682,10 @@ contains
             iSize, jSize
     end if
 
-    if(iSize /= IONO_nTheta .or. jSize /= IONO_nPsi)then
+    if(iSize /= IONO_nTheta*2-1 .or. jSize /= IONO_nPsi)then
        write(*,*)NameSub//' incorrect buffer size=',iSize,jSize,&
             ' IONO_nTheta,IONO_nPsi=',IONO_nTheta, IONO_nPsi
        call CON_stop(NameSub//' SWMF_ERROR')
-    end if
-
-    ! Set hemisphere to transfer:
-    if(iBlock==1) then
-       NameHem = 'North'
-    else if (iBlock==2) then
-       NameHem = 'South'
-    else
-       write(*,*) NameSub//': invalid iBlock = ', iBlock
-       call CON_stop(NameSub//': Error coupling with UA')
     end if
 
     ! Make sure that the most recent result is provided
@@ -704,44 +693,35 @@ contains
     call IE_run(tSimulationTmp,tSimulation)
 
     Buffer_IIV = 0.0
-    select case(NameHem)
+   
+    if (iProc /= 0) return
+    do iVar=1, nVarIn
+       select case(NameVar_V(iVar))
 
-    case('North')
+       case('pot')
+          Buffer_IIV(:,:,iVar) = IONO_Phi
+       case('def')
+          Buffer_IIV(:,:,iVar) = IONO_DIFFE_EFlux
+       case('dae')
+          Buffer_IIV(:,:,iVar) = IONO_DIFFE_Ave_E
+       case('mef')
+          Buffer_IIV(:,:,iVar) = IONO_MONO_EFlux
+       case('mae')
+          Buffer_IIV(:,:,iVar) = IONO_MONO_Ave_E
+       case('wef')
+          Buffer_IIV(:,:,iVar) = IONO_BBND_EFlux
+       case('wae')
+          Buffer_IIV(:,:,iVar) = IONO_BBND_Ave_E
+       case('ief')
+          Buffer_IIV(:,:,iVar) = IONO_DIFFI_EFlux
+       case('iae')
+          Buffer_IIV(:,:,iVar) = IONO_DIFFI_Ave_E
+       case default
+          call CON_stop(NameSub//' invalid NameVar='//NameVar_V(iVar))
+       end select
+    end do
 
-       if(iProc /= 0) RETURN
-
-       do iVar=1, nVarIn
-          select case(NameVar_V(iVar))
-
-          case('pot')
-             Buffer_IIV(:,:,iVar) = IONO_NORTH_Phi
-          case('ave')
-             Buffer_IIV(:,:,iVar) = IONO_NORTH_Ave_E
-          case('tot')
-             Buffer_IIV(:,:,iVar) = IONO_NORTH_EFlux
-          case default
-             call CON_stop(NameSub//' invalid NameVar='//NameVar_V(iVar))
-          end select
-       end do
-
-    case('South')
-
-       if(iProc /= nProc - 1) RETURN
-
-       do iVar=1, nVarIn
-          select case(NameVar_V(iVar))
-
-          case('pot')
-             Buffer_IIV(:,:,iVar) = IONO_SOUTH_Phi
-          case('ave')
-             Buffer_IIV(:,:,iVar) = IONO_SOUTH_Ave_E
-          case('tot')
-             Buffer_IIV(:,:,iVar) = IONO_SOUTH_EFlux
-          case default
-             call CON_stop(NameSub//' invalid NameVar='//NameVar_V(iVar))
-          end select
-       end do
-    end select
+    
 
   end subroutine IE_get_for_ua
   !============================================================================
@@ -1319,7 +1299,7 @@ contains
    !---------------------------------------------------------------------------
     if(DoUseIMPrecip) then
         if(DoUseIMSpectrum) then
-            write(*,*) 'Filling IM spectra not implemented in IE_put_from_im_complete'
+            write(*,*) 'IM spectra not implemented in IE_put_from_im_complete'
 !            iono_north_im_eHydrPrec(iLat,iLon,1:nEngIM) = buff_v(1:nEngIM)
 !            iono_north_im_nHydrPrec(iLat,iLon,1:nEngIM) = &
 !                    buff_v(nEngIM+1:2*nEngIM)

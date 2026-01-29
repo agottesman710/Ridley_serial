@@ -42,6 +42,15 @@ module ModIonosphere
   real, allocatable :: IONO_Eflux(:,:)
   real, allocatable :: IONO_SigmaP(:,:)
   real, allocatable :: IONO_SigmaH(:,:)
+  ! Same for 4 types of precip - GITM coupling
+  real, allocatable :: IONO_DIFFI_Ave_E(:,:)
+  real, allocatable :: IONO_DIFFE_Ave_E(:,:)
+  real, allocatable :: IONO_MONO_Ave_E(:,:)
+  real, allocatable :: IONO_BBND_Ave_E(:,:)
+  real, allocatable :: IONO_DIFFI_EFlux(:,:)
+  real, allocatable :: IONO_DIFFE_EFlux(:,:)
+  real, allocatable :: IONO_MONO_EFlux(:,:)
+  real, allocatable :: IONO_BBND_EFlux(:,:)
 
   ! Ionosphere solution array definitions
   real, allocatable :: IONO_NORTH_Phi(:,:)   ! potential
@@ -223,6 +232,15 @@ contains
     allocate(IONO_Eflux(2*IONO_nTheta-1,IONO_nPsi));      IONO_Eflux = 0
     allocate(IONO_SigmaP(2*IONO_nTheta-1,IONO_nPsi));     IONO_SigmaP = 0
     allocate(IONO_SigmaH(2*IONO_nTheta-1,IONO_nPsi));     IONO_SigmaH = 0
+    allocate(IONO_DIFFI_Ave_E(2*IONO_nTheta-1,IONO_nPsi));IONO_DIFFI_Ave_E = 0
+    allocate(IONO_DIFFE_Ave_E(2*IONO_nTheta-1,IONO_nPsi));IONO_DIFFE_Ave_E = 0
+    allocate(IONO_MONO_Ave_E(2*IONO_nTheta-1,IONO_nPsi)); IONO_MONO_Ave_E = 0
+    allocate(IONO_BBND_Ave_E(2*IONO_nTheta-1,IONO_nPsi)); IONO_BBND_Ave_E = 0
+    allocate(IONO_DIFFI_EFlux(2*IONO_nTheta-1,IONO_nPsi));IONO_DIFFI_EFlux = 0
+    allocate(IONO_DIFFE_EFlux(2*IONO_nTheta-1,IONO_nPsi));IONO_DIFFE_EFlux = 0
+    allocate(IONO_MONO_EFlux(2*IONO_nTheta-1,IONO_nPsi)); IONO_MONO_EFlux = 0
+    allocate(IONO_BBND_EFlux(2*IONO_nTheta-1,IONO_nPsi)); IONO_BBND_EFlux = 0
+
 
     allocate(IONO_NORTH_PHI(IONO_nTheta,IONO_nPsi))
     allocate(IONO_SOUTH_PHI(IONO_nTheta,IONO_nPsi))
@@ -401,6 +419,14 @@ contains
     deallocate(IONO_Eflux)
     deallocate(IONO_SigmaP)
     deallocate(IONO_SigmaH)
+    deallocate(IONO_DIFFI_Ave_E)
+    deallocate(IONO_DIFFE_Ave_E)
+    deallocate(IONO_MONO_Ave_E)
+    deallocate(IONO_BBND_Ave_E)
+    deallocate(IONO_DIFFI_EFlux)
+    deallocate(IONO_DIFFE_EFlux)
+    deallocate(IONO_MONO_EFlux)
+    deallocate(IONO_BBND_EFlux)
     deallocate(IONO_NORTH_PHI)
     deallocate(IONO_SOUTH_PHI)
     deallocate(IONO_NORTH_X)
