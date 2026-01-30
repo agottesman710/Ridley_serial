@@ -20,7 +20,7 @@ module ModConductance
   ! Logicals to control what conductance sources are used.
   logical :: DoUseEuvCond=.true., DoUseAurora=.true., DoUseDiffI=.true., &
        DoUseDiffE=.true., DoUseMono=.true., DoUseBbnd=.true., &
-       UsePrecipSmoothing=.true., IsImCoupled=.false.
+       UsePrecipSmoothing=.true., IsImCoupled=.false., IsUaCoupled=.false.
 
   ! Use IPE conductances?
   logical:: UseIpeConductance = .false.
@@ -230,16 +230,24 @@ contains
 
     ! Sum conductance into the correct hemisphere.
     if(NameHemiIn == 'north')then
-       IONO_NORTH_SigmaH = sqrt(SigmaHalConst**2 + SigmaHalEuv_II**2 + &
-            (2.*StarLightCond)**2 + SigmaHalMono_II**2 + SigmaHalDiffe_II**2 + &
-            SigmaHalDiffi_II**2)
-       IONO_NORTH_SigmaP = sqrt(SigmaPedConst**2 + SigmaPedEuv_II**2 + &
-            StarLightCond**2 + SigmaPedMono_II**2 + SigmaPedDiffe_II**2 + &
-            SigmaPedDiffi_II**2)
-       ! Add broadband conductance:
-       IONO_NORTH_SigmaH = IONO_NORTH_SigmaH + SigmaHalBbnd_II
-       IONO_NORTH_SigmaP = IONO_NORTH_SigmaP + SigmaPedBbnd_II
-       ! Store Average energy and energy flux:
+       if (IsUaCoupled) then
+          IONO_NORTH_SigmaH = IONO_NORTH_UA_SigmaH
+          IONO_NORTH_SigmaP = IONO_NORTH_UA_SigmaP
+          if(DoTest) &
+               write(*,*) "UA Conductance is being used in the northern "//&
+                    "hemisphere"
+       else
+          IONO_NORTH_SigmaH = sqrt(SigmaHalConst**2 + SigmaHalEuv_II**2 + &
+               (2.*StarLightCond)**2 + SigmaHalMono_II**2 + SigmaHalDiffe_II**2 + &
+               SigmaHalDiffi_II**2)
+          IONO_NORTH_SigmaP = sqrt(SigmaPedConst**2 + SigmaPedEuv_II**2 + &
+               StarLightCond**2 + SigmaPedMono_II**2 + SigmaPedDiffe_II**2 + &
+               SigmaPedDiffi_II**2)
+          ! Add broadband conductance:
+          IONO_NORTH_SigmaH = IONO_NORTH_SigmaH + SigmaHalBbnd_II
+          IONO_NORTH_SigmaP = IONO_NORTH_SigmaP + SigmaPedBbnd_II
+          ! Store Average energy and energy flux:
+       end if
        IONO_NORTH_EFlux = EfluxMono_II
        IONO_NORTH_Ave_E = AvgEMono_II
        IONO_NORTH_MONO_EFlux = EfluxMono_II
@@ -255,15 +263,23 @@ contains
        sigmaP = IONO_NORTH_SigmaP
 
     else
-       IONO_SOUTH_SigmaH = sqrt(SigmaHalConst**2 + SigmaHalEuv_II**2 + &
-            (2.*StarLightCond)**2 + SigmaHalMono_II**2 + SigmaHalDiffe_II**2 + &
-            SigmaHalDiffi_II**2)
-       IONO_SOUTH_SigmaP = sqrt(SigmaPedConst**2 + SigmaPedEuv_II**2 + &
-            StarLightCond**2 + SigmaPedMono_II**2 + SigmaPedDiffe_II**2 + &
-            SigmaPedDiffi_II**2)
-       ! Add broadband conductance:
-       IONO_SOUTH_SigmaH = IONO_SOUTH_SigmaH + SigmaHalBbnd_II
-       IONO_SOUTH_SigmaP = IONO_SOUTH_SigmaP + SigmaPedBbnd_II
+       if (IsUaCoupled) then
+          IONO_SOUTH_SigmaH = IONO_SOUTH_UA_SigmaH
+          IONO_SOUTH_SigmaP = IONO_SOUTH_UA_SigmaP
+          if(DoTest) &
+               write(*,*) "UA Conductance is being used in the southern "//&
+                    "hemisphere"
+       else   
+          IONO_SOUTH_SigmaH = sqrt(SigmaHalConst**2 + SigmaHalEuv_II**2 + &
+               (2.*StarLightCond)**2 + SigmaHalMono_II**2 + SigmaHalDiffe_II**2 + &
+               SigmaHalDiffi_II**2)
+          IONO_SOUTH_SigmaP = sqrt(SigmaPedConst**2 + SigmaPedEuv_II**2 + &
+               StarLightCond**2 + SigmaPedMono_II**2 + SigmaPedDiffe_II**2 + &
+               SigmaPedDiffi_II**2)
+          ! Add broadband conductance:
+          IONO_SOUTH_SigmaH = IONO_SOUTH_SigmaH + SigmaHalBbnd_II
+          IONO_SOUTH_SigmaP = IONO_SOUTH_SigmaP + SigmaPedBbnd_II
+       end if   
        ! Store Average energy and energy flux:
        IONO_SOUTH_EFlux = EfluxMono_II
        IONO_SOUTH_Ave_E = AvgEMono_II

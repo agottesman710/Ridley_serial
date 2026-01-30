@@ -133,6 +133,10 @@ module ModIonosphere
   real, allocatable :: IONO_SOUTH_Jz(:,:)
   real, allocatable :: IONO_NORTH_TGCM_JR(:,:)  ! TGCM current
   real, allocatable :: IONO_SOUTH_TGCM_JR(:,:)
+  real, allocatable :: IONO_NORTH_UA_SigmaH(:,:)
+  real, allocatable :: IONO_SOUTH_UA_SigmaH(:,:)
+  real, allocatable :: IONO_NORTH_UA_SigmaP(:,:)
+  real, allocatable :: IONO_SOUTH_UA_SigmaP(:,:)
   real, allocatable :: IONO_NORTH_Fake_JR(:,:)
   real, allocatable :: IONO_SOUTH_Fake_JR(:,:)
   real, allocatable :: iono_north_im_jr(:,:)    ! Inner Mag current
@@ -527,6 +531,10 @@ contains
     if(allocated(IONO_south_im_aveeHydr))  deallocate(IONO_south_im_aveeHydr)
     if(allocated(IONO_north_im_efluxHydr)) deallocate(IONO_north_im_efluxHydr)
     if(allocated(IONO_south_im_efluxHydr)) deallocate(IONO_south_im_efluxHydr)
+    if(allocated(IONO_NORTH_UA_SigmaH)) deallocate(IONO_NORTH_UA_SigmaH)
+    if(allocated(IONO_SOUTH_UA_SigmaH)) deallocate(IONO_SOUTH_UA_SigmaH)
+    if(allocated(IONO_NORTH_UA_SigmaP)) deallocate(IONO_NORTH_UA_SigmaP)
+    if(allocated(IONO_SOUTH_UA_SigmaP)) deallocate(IONO_SOUTH_UA_SigmaP)
     deallocate(IsFilledWithIm)
     deallocate(IONO_NORTH_invB)
     deallocate(IONO_SOUTH_invB)

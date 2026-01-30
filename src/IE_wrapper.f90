@@ -872,7 +872,7 @@ contains
   subroutine IE_put_from_ua(Buffer_IIBV, nMLTs, nLats, nVarIn, NameVarUaIn_V)
 
     use IE_ModMain, ONLY: IsNewInput, DoCoupleUaCurrent
-    use ModConductance, ONLY: StarLightCond
+    use ModConductance, ONLY: StarLightCond, IsUaCoupled
     use ModIonosphere
     use ModConst
     use ModUtilities, ONLY: check_allocate
@@ -922,6 +922,11 @@ contains
     ! Set intelligent defaults as needed:
     IONO_NORTH_TGCM_JR = 0.0
     IONO_SOUTH_TGCM_JR = 0.0
+    if(.not. allocated(IONO_NORTH_UA_SigmaH)) &
+         allocate(IONO_NORTH_UA_SigmaH(IONO_nTheta,IONO_nPsi), &
+         IONO_SOUTH_UA_SigmaH(IONO_nTheta,IONO_nPsi), &
+         IONO_NORTH_UA_SigmaP(IONO_nTheta,IONO_nPsi), &
+         IONO_SOUTH_UA_SigmaP(IONO_nTheta,IONO_nPsi))        
 
     ! Check if arrays are allocated & allocate as necessary
     if (.not.allocated(UA_Lats)) then
@@ -1067,15 +1072,15 @@ contains
           select case (NameVarUaIn_V(iVar))
           case('hal') ! Hall conductance
              if(iBlock==1)then
-                IONO_NORTH_SigmaH = max(TmpVar_II, 2*StarLightCond)
+                IONO_NORTH_UA_SigmaH = max(TmpVar_II, 2*StarLightCond)
              else
-                IONO_SOUTH_SigmaH = max(TmpVar_II, 2*StarLightCond)
+                IONO_SOUTH_UA_SigmaH = max(TmpVar_II, 2*StarLightCond)
              end if
           case('ped') ! Pedersen conductance
              if(iBlock==1)then
-                IONO_NORTH_SigmaP = max(TmpVar_II, StarLightCond)
+                IONO_NORTH_UA_SigmaP = max(TmpVar_II, StarLightCond)
              else
-                IONO_SOUTH_SigmaP = max(TmpVar_II, StarLightCond)
+                IONO_SOUTH_UA_SigmaP = max(TmpVar_II, StarLightCond)
              end if
           case('fac') ! Neutral wind FACs
              if(iBlock==1)then
@@ -1089,6 +1094,8 @@ contains
           end select
        end do
     end do VAR
+
+    IsUaCoupled = .true.
 
   end subroutine IE_put_from_ua
   !============================================================================
