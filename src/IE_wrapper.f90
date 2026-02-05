@@ -628,6 +628,7 @@ contains
     ! Get number and names of variables for UA to IE coupling.
     ! IE reports what variables it needs from UA.
     ! UA will use this info to create and fill buffers appropriately.
+   use ModIonosphere, ONLY: DoCoupleUA
 
     integer, intent(out) :: nVar
     character(len=*), intent(out), optional :: NameVar_V(:)
@@ -640,6 +641,8 @@ contains
     ! Right now, only request Hall & Pedersen conductance.
     ! In the future, neutral wind FAC coupling or other values can/will
     ! be shared from UA.
+    DoCoupleUA = .true.
+
     nVar = 4
     if(present(NameVar_V)) NameVar_V(1:4) = ['lon','lat','hal','ped']
 

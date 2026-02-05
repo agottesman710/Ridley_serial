@@ -33,6 +33,9 @@ module ModIonosphere
   logical :: DoUseIMPrecip = .true., DoUseIMSpectrum = .false.
   integer :: nEngIM = 15
 
+  ! Using GITM?
+  logical :: DoCoupleUA = .false.
+
   ! Ionosphere Solution on the whole grid
   real, allocatable :: IONO_Phi(:,:)
   real, allocatable :: IONO_IonNumFlux(:,:)
