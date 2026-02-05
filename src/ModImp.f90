@@ -32,7 +32,7 @@ module ModImp
       real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: LatIn_II
 
       real, dimension(IONO_nTheta, IONO_nPsi) :: &
-              FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II
+              FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, Potential_II
 
       character(len=*), intent(in) :: NameHemiIn
 
@@ -66,8 +66,11 @@ module ModImp
       NfluxDiffe_II = EfluxDiffe_II / AvgEDiffe_II / cKEV
       ElectronTemp_II = 2.0 * AvgEDiffe_II / cKEV ! kEV to J(????)
       call monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, &
-              AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II)
+              AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, Potential_II)
 
+      if (DoUseIMSpectrum) then
+        call imp_spectral_add_potential(NameHemiIn, Potential_II)
+      end if
       contains
     !==========================================================================
       !-----------------------------------------------------------------------
@@ -98,10 +101,10 @@ module ModImp
               EfluxDiffe_II = iono_north_im_efluxElec / 1000.0
               AvgEDiffi_II = iono_north_im_aveeHydr / 1000.0
               EfluxDiffi_II = iono_north_im_efluxHydr / 1000.0
-           else
+          else
               call CON_stop(NameSub//' : unrecognized hemisphere - '//&
                       NameHemiIn)
-           end if
+          end if
 
       end subroutine imp_integrated_flux
     !==========================================================================
@@ -113,6 +116,7 @@ module ModImp
                 iono_north_im_eHydrPrec, iono_south_im_eHydrPrec, &
                 iono_north_im_nElecPrec, iono_south_im_nElecPrec, &
                 iono_north_im_nHydrPrec, iono_south_im_nHydrPrec
+          use ModConst, ONLY: cMEV
 
           real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: &
                   AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
@@ -121,11 +125,46 @@ module ModImp
           character(len=*), intent(in) :: NameHemiIn
       character(len=*), parameter:: NameSub = 'imp_spectral_flux'
       !------------------------------------------------------------------------
-          call CON_stop(NameSub//' not yet implemented!')
+          if (trim(NameHemiIn) == 'south') then
+              ! eV to keV and mW/m^2 to W/m^2
+              ! Sum across energy bins to get total precip at spatial points\
+              ! need to check units of AvgE
+              AvgEDiffe_II = sum(iono_south_im_eElecPrec, dim=3)/ & 
+                             sum(iono_south_im_nElecPrec, dim=3) / cMEV
+              EfluxDiffe_II = sum(iono_south_im_eElecPrec, dim=3) / 1000.0 
+              AvgEDiffi_II = sum(iono_north_im_eHydrPrec, dim=3) / &
+                             sum(iono_north_im_nHydrPrec, dim=3) / cMEV
+              EfluxDiffi_II = sum(iono_north_im_eHydrPrec, dim=3) / 1000.0
+          else if (trim(NameHemiIn) == 'north') then
+              AvgEDiffe_II = sum(iono_north_im_eElecPrec, dim=3) / &
+                             sum(iono_north_im_nElecPrec, dim=3) / cMEV
+              EfluxDiffe_II = sum(iono_north_im_eElecPrec, dim=3) / 1000.0
+              AvgEDiffi_II = sum(iono_south_im_eHydrPrec, dim=3) / &
+                             sum(iono_south_im_nHydrPrec, dim=3) / cMEV
+              EfluxDiffi_II = sum(iono_south_im_eHydrPrec, dim=3) / 1000.0
+          else
+              call CON_stop(NameSub//' : unrecognized hemisphere - '//&
+                      NameHemiIn)
+          end if
+
       end subroutine imp_spectral_flux
     !==========================================================================
+    subroutine imp_spectral_add_potential(NameHemiIn, PotIn_II)
+          use ModIonosphere, ONLY: &
+                iono_north_im_eElecPrec, iono_south_im_eElecPrec, &
+                iono_north_im_nElecPrec, iono_south_im_nElecPrec
+
+          real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: PotIn_II
+
+          character(len=*), intent(in) :: NameHemiIn
+      character(len=*), parameter:: NameSub = 'imp_spectral_add_potential'
+      !------------------------------------------------------------------------
+      ! need energy grid here
+      ! how do we linearly sum energies???.
+        ! energy += potential 
+    end subroutine imp_spectral_add_potential
+      !==========================================================================
   end subroutine imp_gen_fluxes
   !============================================================================
-
 end module ModImp
 !==============================================================================

@@ -326,16 +326,7 @@ contains
     allocate(IONO_SOUTH_Fake_JR(IONO_nTheta,IONO_nPsi))
     allocate(IONO_north_im_jr(IONO_nTheta,IONO_nPsi))
     allocate(IONO_south_im_jr(IONO_nTheta,IONO_nPsi))
-    if(DoUseIMSpectrum) then ! Allocate only what's necessary for IM coupling
-      allocate(IONO_north_im_eElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-      allocate(IONO_south_im_eElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-      allocate(IONO_north_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-      allocate(IONO_south_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-      allocate(IONO_north_im_eHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-      allocate(IONO_south_im_eHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-      allocate(IONO_north_im_nHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-      allocate(IONO_south_im_nHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-    elseif(DoUseIMPrecip) then
+    if(DoUseIMPrecip) then ! Allocate only what's necessary for IM coupling
       allocate(IONO_north_im_aveeElec(IONO_nTheta,IONO_nPsi))
       allocate(IONO_south_im_aveeElec(IONO_nTheta,IONO_nPsi))
       allocate(IONO_north_im_efluxElec(IONO_nTheta,IONO_nPsi))
@@ -345,10 +336,10 @@ contains
       allocate(IONO_north_im_efluxHydr(IONO_nTheta,IONO_nPsi))
       allocate(IONO_south_im_efluxHydr(IONO_nTheta,IONO_nPsi))
     else
-        allocate(IONO_north_im_avee(IONO_nTheta,IONO_nPsi))
-        allocate(IONO_south_im_avee(IONO_nTheta,IONO_nPsi))
-        allocate(IONO_north_im_eflux(IONO_nTheta,IONO_nPsi))
-        allocate(IONO_south_im_eflux(IONO_nTheta,IONO_nPsi))
+      allocate(IONO_north_im_avee(IONO_nTheta,IONO_nPsi))
+      allocate(IONO_south_im_avee(IONO_nTheta,IONO_nPsi))
+      allocate(IONO_north_im_eflux(IONO_nTheta,IONO_nPsi))
+      allocate(IONO_south_im_eflux(IONO_nTheta,IONO_nPsi))
     end if
     allocate(IsFilledWithIm(IONO_nTheta,IONO_nPsi))
     allocate(IONO_NORTH_invB(IONO_nTheta,IONO_nPsi))

@@ -176,13 +176,15 @@ module ModMagnit
   end subroutine magnit_gen_fluxes
   !============================================================================
   subroutine monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, &
-          ElectronTemp_II, AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II)
+          ElectronTemp_II, AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, &
+          PotOut_II)
 
     use ModConst, ONLY: cKEV
     use ModPlanetConst, ONLY: rPlanet_I, IonoHeightPlanet_I, Earth_
 
     real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: EfluxMono_II, &
                                                             AvgEMono_II
+    real, intent(out), dimension(IONO_nTheta, IONO_nPsi), optional :: PotOut_II                                                            
 
     ! Import Hemispheric Latitudes for Magnetic Field Calculations
     real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: FAC_II, LatIn_II, &
@@ -215,6 +217,7 @@ module ModMagnit
     elsewhere
       NfluxMono_II = NfluxDiffe_II
     end where
+    if(present(PotOut_II)) PotOut_II = Potential_II
     ! Split up large calculation into a few steps
     ! Calculate large potential exponent
     VExponent_II = EXP(-cElectronCharge * Potential_II / ((ElectronTemp_II) * &

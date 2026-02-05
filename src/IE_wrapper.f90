@@ -1135,12 +1135,12 @@ contains
        if (.not.IsFilledWithIm(iLat,iLon)) then
            ! CIMI full spectrum info
            if(DoUseIMSpectrum) then
-               iono_north_im_eHydrPrec(iLat,iLon,1:nEngIM) = buff_v(1:nEngIM)
-               iono_north_im_nHydrPrec(iLat,iLon,1:nEngIM) = &
+               iono_north_im_eHydrPrec(iLat,iLon,:) = buff_v(1:nEngIM)
+               iono_north_im_nHydrPrec(iLat,iLon,:) = &
                        buff_v(nEngIM+1:2*nEngIM)
-               iono_north_im_eElecPrec(iLat,iLon,1:nEngIM) = &
+               iono_north_im_eElecPrec(iLat,iLon,:) = &
                        buff_v(2*nEngIM+1:3*nEngIM)
-               iono_north_im_nElecPrec(iLat,iLon,1:nEngIM) = &
+               iono_north_im_nElecPrec(iLat,iLon,:) = &
                        buff_v(3*nEngIM+1:4*nEngIM)
            elseif(DoUseIMPrecip) then
               ! CIMI Precip
@@ -1181,6 +1181,30 @@ contains
         if(DoUseIMSpectrum) then
             ! Update to 8 once southern hemisphere exists
             nVarImIe = 4 * nEngIM
+            allocate(IONO_north_im_eElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
+            allocate(IONO_south_im_eElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
+            allocate(IONO_north_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
+            allocate(IONO_south_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
+            allocate(IONO_north_im_eHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
+            allocate(IONO_south_im_eHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
+            allocate(IONO_north_im_nHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
+            allocate(IONO_south_im_nHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
+            if(allocated(IONO_north_im_aveeElec))  &
+               deallocate(IONO_north_im_aveeElec)
+            if(allocated(IONO_south_im_aveeElec))  &
+               deallocate(IONO_south_im_aveeElec)
+            if(allocated(IONO_north_im_efluxElec)) &
+               deallocate(IONO_north_im_efluxElec)
+            if(allocated(IONO_south_im_efluxElec)) &
+               deallocate(IONO_south_im_efluxElec)
+            if(allocated(IONO_north_im_aveeHydr))  &
+               deallocate(IONO_north_im_aveeHydr)
+            if(allocated(IONO_south_im_aveeHydr))  &
+               deallocate(IONO_south_im_aveeHydr)
+            if(allocated(IONO_north_im_efluxHydr)) &
+               deallocate(IONO_north_im_efluxHydr)
+            if(allocated(IONO_south_im_efluxHydr)) &
+               deallocate(IONO_south_im_efluxHydr)
         else
             nVarImIe = 4
         end if
@@ -1306,14 +1330,39 @@ contains
    !---------------------------------------------------------------------------
     if(DoUseIMPrecip) then
         if(DoUseIMSpectrum) then
-            write(*,*) 'IM spectra not implemented in IE_put_from_im_complete'
-!            iono_north_im_eHydrPrec(iLat,iLon,1:nEngIM) = buff_v(1:nEngIM)
-!            iono_north_im_nHydrPrec(iLat,iLon,1:nEngIM) = &
-!                    buff_v(nEngIM+1:2*nEngIM)
-!            iono_north_im_eElecPrec(iLat,iLon,1:nEngIM) = &
-!                    buff_v(2*nEngIM+1:3*nEngIM)
-!            iono_north_im_nElecPrec(iLat,iLon,1:nEngIM) = &
-!                    buff_v(3*nEngIM+1:4*nEngIM)
+            iono_north_im_eHydrPrec(:,iono_npsi,:) = &
+                  iono_north_im_eHydrPrec(:,1,:)
+            iono_north_im_nHydrPrec(:,iono_npsi,:) = &
+                  iono_north_im_nHydrPrec(:,1,:)
+            iono_north_im_eElecPrec(:,iono_npsi,:) = &
+                  iono_north_im_eElecPrec(:,1,:)
+            iono_north_im_nElecPrec(:,iono_npsi,:) = &
+                  iono_north_im_nElecPrec(:,1,:)
+
+            if (nProc > 1) then
+                iError = 0
+                call MPI_Bcast(iono_north_im_eHydrPrec, &
+                     iono_nTheta*iono_nPsi*nEngIM, MPI_Real, 0, iComm, iError)
+                call MPI_Bcast(iono_north_im_nHydrPrec, &
+                     iono_nTheta*iono_nPsi*nEngIM, MPI_Real, 0, iComm, iError)
+                call MPI_Bcast(iono_north_im_eElecPrec, &
+                     iono_nTheta*iono_nPsi*nEngIM, MPI_Real, 0, iComm, iError)
+                call MPI_Bcast(iono_north_im_nElecPrec, &
+                     iono_nTheta*iono_nPsi*nEngIM, MPI_Real, 0, iComm, iError)
+            endif
+
+            do i = 1, IONO_nTheta
+                iono_north_im_eHydrPrec(i,:,:) = &
+                        iono_north_im_eHydrPrec(Iono_nTheta-i+1,:,:)
+                iono_north_im_nHydrPrec(i,:,:) = &
+                        iono_north_im_nHydrPrec(Iono_nTheta-i+1,:,:)
+                iono_north_im_eElecPrec(i,:,:) = &
+                        iono_north_im_eElecPrec(Iono_nTheta-i+1,:,:)
+                iono_north_im_nElecPrec(i,:,:) = &
+                        iono_north_im_nElecPrec(Iono_nTheta-i+1,:,:)
+
+            enddo
+
          else
             iono_north_im_efluxHydr(:,iono_npsi) = iono_north_im_efluxHydr(:,1)
             iono_north_im_aveeHydr(:,iono_npsi)  = iono_north_im_efluxHydr(:,1)
@@ -1374,6 +1423,7 @@ contains
     end if
 
     IsFilledWithIm = .false.
+
     IsImCoupled = .true.
 
   end subroutine IE_put_from_im_complete
