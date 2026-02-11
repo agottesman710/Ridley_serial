@@ -29,6 +29,10 @@ subroutine IE_gather
       IONO_DIFFE_EFlux= -Huge(1.0)
       IONO_MONO_EFlux = -Huge(1.0)
       IONO_BBND_EFlux = -Huge(1.0)
+      if(DoUseIMSpectrum) then
+        IONO_ELEC_NFlux = -Huge(1.0)
+        IONO_HYDR_NFlux = -Huge(1.0)
+      end if
   endif
 
   if (iProc == 0) then
@@ -49,6 +53,11 @@ subroutine IE_gather
          IONO_DIFFE_EFlux(1:IONO_nTheta,:)= IONO_NORTH_DIFFE_EFlux
          IONO_MONO_EFlux(1:IONO_nTheta,:) = IONO_NORTH_MONO_EFlux
          IONO_BBND_EFlux(1:IONO_nTheta,:) = IONO_NORTH_BBND_EFlux
+         if(DoUseIMSpectrum) then
+          ! Update when ready
+          IONO_ELEC_NFlux = -Huge(1.0)
+          IONO_HYDR_NFlux = -Huge(1.0)
+        end if
      endif
   endif
 
@@ -70,6 +79,11 @@ subroutine IE_gather
          IONO_DIFFE_EFlux(IONO_nTheta:2*IONO_nTheta-1,:)= IONO_SOUTH_DIFFE_EFlux
          IONO_MONO_EFlux(IONO_nTheta:2*IONO_nTheta-1,:) = IONO_SOUTH_MONO_EFlux
          IONO_BBND_EFlux(IONO_nTheta:2*IONO_nTheta-1,:) = IONO_SOUTH_BBND_EFlux
+         if(DoUseIMSpectrum) then
+          ! Update when ready
+          IONO_ELEC_NFlux = -Huge(1.0)
+          IONO_HYDR_NFlux = -Huge(1.0)
+        end if
      endif 
      
   endif
@@ -94,6 +108,12 @@ subroutine IE_gather
        call MPI_reduce_real_array(IONO_DIFFE_EFlux,n, MPI_MAX, 0, iComm, iError)
        call MPI_reduce_real_array(IONO_MONO_EFlux, n, MPI_MAX, 0, iComm, iError)
        call MPI_reduce_real_array(IONO_BBND_EFlux, n, MPI_MAX, 0, iComm, iError)
+       if(DoUseIMSpectrum) then
+          call MPI_reduce_real_array(IONO_HYDR_NFlux, n, MPI_MAX, 0, iComm, &
+                                    iError)
+          call MPI_reduce_real_array(IONO_ELEC_NFlux, n, MPI_MAX, 0, iComm, &
+                                    iError)
+        end if
      endif
      
 

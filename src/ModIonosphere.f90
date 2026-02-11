@@ -57,6 +57,9 @@ module ModIonosphere
   real, allocatable :: IONO_DIFFE_EFlux(:,:)
   real, allocatable :: IONO_MONO_EFlux(:,:)
   real, allocatable :: IONO_BBND_EFlux(:,:)
+  ! Spectrum preicpitation on the whole grid
+  real, allocatable :: IONO_HYDR_NFlux(:,:,:)
+  real, allocatable :: IONO_ELEC_NFlux(:,:,:)
 
   ! Ionosphere solution array definitions
   real, allocatable :: IONO_NORTH_Phi(:,:)   ! potential
@@ -418,6 +421,8 @@ contains
     deallocate(IONO_SigmaH)
     deallocate(IONO_DIFFI_Ave_E)
     deallocate(IONO_DIFFE_Ave_E)
+    if(allocated(IONO_HYDR_NFlux)) deallocate (IONO_HYDR_NFlux)
+    if(allocated(IONO_ELEC_NFlux)) deallocate (IONO_ELEC_NFlux)
     deallocate(IONO_MONO_Ave_E)
     deallocate(IONO_BBND_Ave_E)
     deallocate(IONO_DIFFI_EFlux)

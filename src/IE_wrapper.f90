@@ -628,7 +628,8 @@ contains
     ! Get number and names of variables for UA to IE coupling.
     ! IE reports what variables it needs from UA.
     ! UA will use this info to create and fill buffers appropriately.
-   use ModIonosphere, ONLY: DoCoupleUA, nEngUA, EngUA
+   use ModIonosphere, ONLY: DoCoupleUA, nEngUA, EngUA, Iono_nTheta, Iono_nPsi, &
+                            IONO_HYDR_NFlux, IONO_ELEC_NFlux
 
     integer, intent(out) :: nVar
     integer, intent(in) :: nEngInput
@@ -654,6 +655,12 @@ contains
       if (allocated(EngUA)) deallocate(EngUA)
       allocate(EngUA(nEngUA))
       EngUA = EngInput
+
+      if(.not. allocated(IONO_HYDR_NFlux)) &
+         allocate(IONO_HYDR_NFlux(2*IONO_nTheta-1,IONO_nPsi,nEngUA), &
+                  IONO_ELEC_NFlux(2*IONO_nTheta-1,IONO_nPsi,nEngUA))
+         IONO_HYDR_NFlux = 0
+         IONO_ELEC_NFlux = 0
     end if
 
     if(DoTestMe)then
@@ -665,7 +672,8 @@ contains
   !============================================================================
 
   subroutine IE_get_for_ua(Buffer_IIV, iSize, jSize, nVarIn, NameVar_V, &
-                           tSimulation)
+                           tSimulation, nVarSpecIn, Buffer_IIIV,&
+                           NameVarSpec_V)
 
     use ModProcIE
     use ModIonosphere
@@ -674,6 +682,9 @@ contains
     real,             intent(out) :: Buffer_IIV(iSize,jSize,nVarIn)
     character (len=*),intent(in)  :: NameVar_V(nVarIn)
     real,             intent(in)  :: tSimulation
+    integer, intent(in) :: nVarSpecIn
+    real, intent(out), optional   :: Buffer_IIIV(iSize,jSize,nEngUA,nVarSpecIn)
+    character (len=*), intent(in), optional :: NameVarSpec_V(nVarSpecIn)
 
     character(len=5) :: NameHem
     integer :: iVar
@@ -734,7 +745,22 @@ contains
        end select
     end do
 
-    
+    if(present(Buffer_IIIV)) then
+
+      Buffer_IIIV = 0.0
+   
+      if (iProc /= 0) return
+      do iVar=1, nVarSpecIn
+         select case(NameVarSpec_V(iVar))
+         case('hyd')
+            Buffer_IIIV(:,:,:,iVar) = IONO_HYDR_NFlux
+         case('ele')
+            Buffer_IIIV(:,:,:,iVar) = IONO_ELEC_NFlux
+         case default
+            call CON_stop(NameSub//' invalid NameVarSpec='//NameVarSpec_V(iVar))
+         end select
+      end do
+    end if
 
   end subroutine IE_get_for_ua
   !============================================================================
@@ -1195,10 +1221,11 @@ contains
         if(DoUseIMSpectrum) then
             ! Update to 8 once southern hemisphere exists
             nVarImIe = 4 + 2 * nEngIM
-            allocate(IONO_north_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-            allocate(IONO_south_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-            allocate(IONO_north_im_nHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
-            allocate(IONO_south_im_nHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
+            if(.not. allocated(IONO_north_im_nElecPrec)) &
+               allocate(IONO_north_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM), &
+                        IONO_south_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM), &
+                        IONO_north_im_nHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM), &
+                        IONO_south_im_nHydrPrec(IONO_nTheta,IONO_nPsi,nEngIM))
 
             if(present(EngInput)) then
                if(allocated(EngIM)) deallocate(EngIM)
