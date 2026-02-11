@@ -22,7 +22,12 @@ module ModImp
       use ModIonosphere, ONLY: DoUseIMSpectrum
       use ModMagnit, ONLY: monoenergetic_flux
       use ModIonosphere, ONLY: IONO_NORTH_JR, IONO_SOUTH_JR, &
-              IONO_NORTH_invB, IONO_SOUTH_invB
+              IONO_NORTH_invB, IONO_SOUTH_invB, &
+              iono_north_im_aveeElec, iono_south_im_aveeElec, &
+              iono_north_im_efluxElec, iono_south_im_eFluxElec, &
+              iono_north_im_aveeHydr, iono_south_im_aveeHydr, &
+              iono_north_im_efluxHydr, iono_south_im_eFluxHydr, &
+              iono_north_im_nElecPrec, iono_south_im_nElecPrec             
       use ModConst, ONLY: cKEV
 
       real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: &
@@ -38,15 +43,19 @@ module ModImp
 
     character(len=*), parameter:: NameSub = 'imp_gen_fluxes'
     !--------------------------------------------------------------------------
-      ! Call correct IMP model based on filled inputs
-      if (DoUseIMSpectrum) then
-          call imp_spectral_flux(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II, &
-                  AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, &
-                  EfluxMono_II, EfluxBbnd_II)
+      if (trim(NameHemiIn) == 'south') then
+          AvgEDiffe_II = iono_south_im_aveeElec / 1000.0 ! eV to keV
+          EfluxDiffe_II = iono_south_im_efluxElec / 1000.0 ! mW/m^2 to W/m^2
+          AvgEDiffi_II = iono_south_im_aveeHydr / 1000.0
+          EfluxDiffi_II = iono_south_im_efluxHydr / 1000.0
+      else if (trim(NameHemiIn) == 'north') then
+          AvgEDiffe_II = iono_north_im_aveeElec / 1000.0
+          EfluxDiffe_II = iono_north_im_efluxElec / 1000.0
+          AvgEDiffi_II = iono_north_im_aveeHydr / 1000.0
+          EfluxDiffi_II = iono_north_im_efluxHydr / 1000.0
       else
-          call imp_integrated_flux(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II, &
-                  AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, &
-                  EfluxMono_II, EfluxBbnd_II)
+          call CON_stop(NameSub//' : unrecognized hemisphere - '//&
+                  NameHemiIn)
       end if
 
       ! Limits AvgE (primarily for low latitudes)
@@ -71,90 +80,17 @@ module ModImp
       if (DoUseIMSpectrum) then
         call imp_spectral_add_potential(NameHemiIn, Potential_II)
       end if
+
+      ! Add bband
       contains
-    !==========================================================================
-      !-----------------------------------------------------------------------
-      subroutine imp_integrated_flux(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II,&
-              AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, &
-              EfluxMono_II, EfluxBbnd_II)
-
-          use ModIonosphere, ONLY: &
-                iono_north_im_aveeElec, iono_south_im_aveeElec, &
-                iono_north_im_efluxElec, iono_south_im_eFluxElec, &
-                iono_north_im_aveeHydr, iono_south_im_aveeHydr, &
-                iono_north_im_efluxHydr, iono_south_im_eFluxHydr
-
-          real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: &
-              AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
-              EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II
-
-          character(len=*), intent(in) :: NameHemiIn
-      character(len=*), parameter:: NameSub = 'imp_integrated_flux'
-      !------------------------------------------------------------------------
-          if (trim(NameHemiIn) == 'south') then
-              AvgEDiffe_II = iono_south_im_aveeElec / 1000.0 ! eV to keV
-              EfluxDiffe_II = iono_south_im_efluxElec / 1000.0 ! mW/m^2 to W/m^2
-              AvgEDiffi_II = iono_south_im_aveeHydr / 1000.0
-              EfluxDiffi_II = iono_south_im_efluxHydr / 1000.0
-          else if (trim(NameHemiIn) == 'north') then
-              AvgEDiffe_II = iono_north_im_aveeElec / 1000.0
-              EfluxDiffe_II = iono_north_im_efluxElec / 1000.0
-              AvgEDiffi_II = iono_north_im_aveeHydr / 1000.0
-              EfluxDiffi_II = iono_north_im_efluxHydr / 1000.0
-          else
-              call CON_stop(NameSub//' : unrecognized hemisphere - '//&
-                      NameHemiIn)
-          end if
-
-      end subroutine imp_integrated_flux
-    !==========================================================================
-      subroutine imp_spectral_flux(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II, &
-              AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, &
-              EfluxMono_II, EfluxBbnd_II)
-          use ModIonosphere, ONLY: &
-                iono_north_im_eElecPrec, iono_south_im_eElecPrec, &
-                iono_north_im_eHydrPrec, iono_south_im_eHydrPrec, &
-                iono_north_im_nElecPrec, iono_south_im_nElecPrec, &
-                iono_north_im_nHydrPrec, iono_south_im_nHydrPrec
-          use ModConst, ONLY: cMEV
-
-          real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: &
-                  AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
-                  EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II
-
-          character(len=*), intent(in) :: NameHemiIn
-      character(len=*), parameter:: NameSub = 'imp_spectral_flux'
-      !------------------------------------------------------------------------
-          if (trim(NameHemiIn) == 'south') then
-              ! eV to keV and mW/m^2 to W/m^2
-              ! Sum across energy bins to get total precip at spatial points\
-              ! need to check units of AvgE
-              AvgEDiffe_II = sum(iono_south_im_eElecPrec, dim=3)/ & 
-                             sum(iono_south_im_nElecPrec, dim=3) / cMEV
-              EfluxDiffe_II = sum(iono_south_im_eElecPrec, dim=3) / 1000.0 
-              AvgEDiffi_II = sum(iono_north_im_eHydrPrec, dim=3) / &
-                             sum(iono_north_im_nHydrPrec, dim=3) / cMEV
-              EfluxDiffi_II = sum(iono_north_im_eHydrPrec, dim=3) / 1000.0
-          else if (trim(NameHemiIn) == 'north') then
-              AvgEDiffe_II = sum(iono_north_im_eElecPrec, dim=3) / &
-                             sum(iono_north_im_nElecPrec, dim=3) / cMEV
-              EfluxDiffe_II = sum(iono_north_im_eElecPrec, dim=3) / 1000.0
-              AvgEDiffi_II = sum(iono_south_im_eHydrPrec, dim=3) / &
-                             sum(iono_south_im_nHydrPrec, dim=3) / cMEV
-              EfluxDiffi_II = sum(iono_south_im_eHydrPrec, dim=3) / 1000.0
-          else
-              call CON_stop(NameSub//' : unrecognized hemisphere - '//&
-                      NameHemiIn)
-          end if
-
-      end subroutine imp_spectral_flux
     !==========================================================================
     subroutine imp_spectral_add_potential(NameHemiIn, PotIn_II)
           use ModIonosphere, ONLY: &
-                iono_north_im_eElecPrec, iono_south_im_eElecPrec, &
-                iono_north_im_nElecPrec, iono_south_im_nElecPrec
+                iono_north_im_nElecPrec, iono_south_im_nElecPrec, &
+                nEngIM, EngIM, EngUA
 
           real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: PotIn_II
+          real, dimension(IONO_nTheta, IONO_nPsi, nEngIM) :: NewNflux_II
 
           character(len=*), intent(in) :: NameHemiIn
       character(len=*), parameter:: NameSub = 'imp_spectral_add_potential'
@@ -162,6 +98,7 @@ module ModImp
       ! need energy grid here
       ! how do we linearly sum energies???.
         ! energy += potential 
+      
     end subroutine imp_spectral_add_potential
       !==========================================================================
   end subroutine imp_gen_fluxes

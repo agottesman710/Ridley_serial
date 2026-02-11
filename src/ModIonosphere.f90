@@ -32,6 +32,9 @@ module ModIonosphere
   ! Using IM (total or full spectrum) precipitation
   logical :: DoUseIMPrecip = .true., DoUseIMSpectrum = .false.
   integer :: nEngIM = 15
+  real, allocatable :: EngIM(:,:)
+  integer :: nEngUA = 50
+  real, allocatable :: EngUA(:)
 
   ! Using GITM?
   logical :: DoCoupleUA = .false.
@@ -156,12 +159,8 @@ module ModIonosphere
   real, allocatable :: iono_south_im_aveeHydr(:,:)
   real, allocatable :: iono_north_im_efluxHydr(:,:)
   real, allocatable :: iono_south_im_efluxHydr(:,:)
-  real, allocatable :: iono_north_im_eElecPrec(:,:,:) ! IMag precip spectrum
-  real, allocatable :: iono_south_im_eElecPrec(:,:,:)
-  real, allocatable :: iono_north_im_nElecPrec(:,:,:)
+  real, allocatable :: iono_north_im_nElecPrec(:,:,:) ! IMag precip spectrum
   real, allocatable :: iono_south_im_nElecPrec(:,:,:)
-  real, allocatable :: iono_north_im_eHydrPrec(:,:,:)
-  real, allocatable :: iono_south_im_eHydrPrec(:,:,:)
   real, allocatable :: iono_north_im_nHydrPrec(:,:,:)
   real, allocatable :: iono_south_im_nHydrPrec(:,:,:)
   ! Sources of Conductances
@@ -509,12 +508,8 @@ contains
     if(allocated(IONO_south_im_avee))      deallocate(IONO_south_im_avee)
     if(allocated(IONO_north_im_eflux))     deallocate(IONO_north_im_eflux)
     if(allocated(IONO_south_im_eflux))     deallocate(IONO_south_im_eflux)
-    if(allocated(IONO_north_im_eElecPrec)) deallocate(IONO_north_im_eElecPrec)
-    if(allocated(IONO_south_im_eElecPrec)) deallocate(IONO_south_im_eElecPrec)
     if(allocated(IONO_north_im_nElecPrec)) deallocate(IONO_north_im_nElecPrec)
     if(allocated(IONO_south_im_nElecPrec)) deallocate(IONO_south_im_nElecPrec)
-    if(allocated(IONO_north_im_eHydrPrec)) deallocate(IONO_north_im_eHydrPrec)
-    if(allocated(IONO_south_im_eHydrPrec)) deallocate(IONO_south_im_eHydrPrec)
     if(allocated(IONO_north_im_nHydrPrec)) deallocate(IONO_north_im_nHydrPrec)
     if(allocated(IONO_south_im_nHydrPrec)) deallocate(IONO_south_im_nHydrPrec)
     if(allocated(IONO_north_im_aveeElec))  deallocate(IONO_north_im_aveeElec)
