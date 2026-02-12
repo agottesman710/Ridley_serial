@@ -78,28 +78,125 @@ module ModImp
               AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, Potential_II)
 
       if (DoUseIMSpectrum) then
-        call imp_spectral_add_potential(NameHemiIn, Potential_II)
+        call imp_spectral_to_UA(NameHemiIn, Potential_II)
       end if
 
       ! Add bband
       contains
     !==========================================================================
-    subroutine imp_spectral_add_potential(NameHemiIn, PotIn_II)
+    subroutine imp_spectral_to_UA(NameHemiIn, PotIn_II)
           use ModIonosphere, ONLY: &
                 iono_north_im_nElecPrec, iono_south_im_nElecPrec, &
-                nEngIM, EngIM, EngUA
+                iono_north_im_nHydrPrec, iono_south_im_nHydrPrec, &
+                nEngIM, EngIM, nEngUA, EngUA, IONO_HYDR_NFlux, IONO_ELEC_NFlux
 
           real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: PotIn_II
           real, dimension(IONO_nTheta, IONO_nPsi, nEngIM) :: NewNflux_II
 
           character(len=*), intent(in) :: NameHemiIn
+          real :: new_eGrid_I(nEngIM), &
+                  hyd_weight, ele_weight
+          integer :: i, j, k, l, hyd_index, ele_index
+
       character(len=*), parameter:: NameSub = 'imp_spectral_add_potential'
       !------------------------------------------------------------------------
-      ! need energy grid here
-      ! how do we linearly sum energies???.
-        ! energy += potential 
+      ! Should replace this later with spline interpolation
+      IONO_HYDR_NFlux = 0.
+      IONO_ELEC_NFlux = 0.
+      ! Now do the same for electrons, except the energy grid is different at
+      ! every point
+      do i = 1, IONO_nTheta; do j = 1, IONO_nPsi
+        ! Create new electron energy grid
+        new_eGrid_I = EngIM(2, :) * 1000 + PotIn_II(i, j)
+        ! Create interp indices to GITM Energy grid
+        UAs: do k = 1, nEngUA
+          ! Less than smallest will be set to 0
+          if (EngUA(k) < new_eGrid_I(1)) then 
+            ele_index = -1
+            ele_weight = -1
+          ! Greater than largest will be set to 0
+          else if (EngUA(k) > new_eGrid_I(nEngIM)) then 
+            ele_index = -1
+            ele_weight = -1
+        ! Interpolate between bounds
+          else
+            eleIMs: do l = 1, nEngIM - 1
+              if (EngUA(k) > new_eGrid_I(l) .and. &
+                  EngUA(k) < new_eGrid_I(l+1)) then
+                ele_index = l
+                ele_weight = (log(EngUA(k)) - log(new_eGrid_I(l))) / &
+                                (log(new_eGrid_I(l+1)) - log(new_eGrid_I(l)))
+                EXIT eleIMs
+              end if
+            end do eleIMs
+          end if
+          ! Do for ions
+          if (EngUA(k) < EngIM(1,1)) then 
+            hyd_index = -1
+            hyd_weight = -1
+          ! Greater than largest will be set to 0
+          else if (EngUA(k) > EngIM(1,nEngIM)) then 
+            hyd_index = -1
+            hyd_weight = -1
+        ! Interpolate between bounds
+          else
+            hydIMs: do l = 1, nEngIM - 1
+              if (EngUA(k) > EngIM(1,l) .and. EngUA(k) < EngIM(1,l+1)) then
+                hyd_index = l
+                hyd_weight = (log(EngUA(k)) - log(EngIM(1,l))) / &
+                                (log(EngIM(1,l+1)) - log(EngIM(1,l)))
+                EXIT hydIMs
+              end if
+            end do hydIMs
+          end if
+          if (NameHemiIn == 'north') then
+            if(hyd_index >= 0) &
+              IONO_HYDR_NFlux(i,j,k) = (1 - hyd_weight) * &
+                                    iono_north_im_nHydrPrec(i,j,hyd_index) &
+                                    + hyd_weight * &
+                                    iono_north_im_nHydrPrec(i,j,hyd_index + 1)
+            if(ele_index >= 0) &
+              IONO_ELEC_NFlux(i,j,k) = (1 - ele_weight) * &
+                                    iono_north_im_nHydrPrec(i,j,ele_index) &
+                                    + ele_weight * &
+                                    iono_north_im_nHydrPrec(i,j,ele_index + 1)
+          else if (NameHemiIn == 'south') then
+            if(hyd_index >= 0) &
+              IONO_HYDR_NFlux(i+IONO_nTheta-1,j,k) = (1 - hyd_weight) * &
+                                    iono_south_im_nHydrPrec(i,j,hyd_index) &
+                                    + hyd_weight * &
+                                    iono_south_im_nHydrPrec(i,j,hyd_index + 1)
+            if(ele_index >= 0) &                        
+              IONO_ELEC_NFlux(i+IONO_nTheta-1,j,k) = (1 - ele_weight) * &
+                                    iono_south_im_nHydrPrec(i,j,ele_index) &
+                                    + ele_weight * &
+                                    iono_south_im_nHydrPrec(i,j,ele_index + 1)                      
+          else
+            call CON_stop(NameSub//' : unrecognized hemisphere - '//&
+                      NameHemiIn)
+          end if
+        end do UAs
+        if (NameHemiIn == 'north') then
+            IONO_HYDR_NFlux(i,j,:) = IONO_HYDR_NFlux(i,j,:) * &
+              SUM(IONO_HYDR_NFlux(i,j,:)) / SUM(iono_north_im_nHydrPrec)
+            IONO_ELEC_Nflux(i,j,:) = IONO_ELEC_NFlux(i,j,:) * &
+              SUM(IONO_ELEC_NFlux(i,j,:)) / SUM(iono_north_im_nElecPrec)
+        else if (NameHemiIn == 'south') then
+            IONO_HYDR_NFlux(i+IONO_nTheta-1,j,:) = &
+              IONO_HYDR_NFlux(i+IONO_nTheta-1,j,:) &
+              * SUM(IONO_HYDR_NFlux(i+IONO_nTheta-1,j,:)) &
+              / SUM(iono_south_im_nHydrPrec)
+            IONO_ELEC_Nflux(i+IONO_nTheta-1,j,:) = &
+              IONO_ELEC_NFlux(i+IONO_nTheta-1,j,:) &
+              * SUM(IONO_ELEC_NFlux(i+IONO_nTheta-1,j,:)) &
+              / SUM(iono_south_im_nElecPrec)
+        else
+          call CON_stop(NameSub//' : unrecognized hemisphere - '//&
+                      NameHemiIn)
+        endif  
+      enddo; enddo
       
-    end subroutine imp_spectral_add_potential
+    end subroutine imp_spectral_to_UA
       !==========================================================================
   end subroutine imp_gen_fluxes
   !============================================================================
