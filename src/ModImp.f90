@@ -95,7 +95,7 @@ module ModImp
 
           character(len=*), intent(in) :: NameHemiIn
           real :: new_eGrid_I(nEngIM), hyd_weight, ele_weight, &
-               engUAwidth(nEngUA), engIMwidth(2,nEngIM)
+               engUAwidth(nEngUA), engIMwidth(2,nEngIM), engIMeV(2, nEngIM)
           integer :: i, j, k, l, hyd_index, ele_index
 
       character(len=*), parameter:: NameSub = 'imp_spectral_add_potential'
@@ -104,17 +104,20 @@ module ModImp
       IONO_HYDR_NFlux = 0.
       IONO_ELEC_NFlux = 0.
 
+      engIMeV = EngIM * 1000
+
       engUAwidth(1) = EngUA(2) - EngUA(1)
       engUAwidth(nEngUA) = EngUA(nEngUA) - EngUA(nEngUA - 1)
       engUAwidth(2:nEngUA-1) = (EngUA(3:nEngUA) - EngUA(2:nEngUA-1))/2 &
            + (EngUA(2:nEngUA-1) - EngUA(1:nEngUA-2))/2
       
       do i = 1, 2
-         engIMwidth(i,1) = EngIM(i,2) - EngIM(i,1)
-         engIMwidth(i,nEngIM) = EngIM(i,nEngIM) - EngIM(i,nEngIM - 1)
-         engIMwidth(i,2:nEngIM-1) =	(EngIM(i,3:nEngIM) - EngIM(i,2:nEngIM-1))/2 &
-              + (EngIM(i,2:nEngIM-1) - EngIM(i,1:nEngIM-2))/2
-         engIMwidth(i,:) = engIMwidth(i,:) * 1000 ! convert to eV
+         engIMwidth(i,1) = engIMeV(i,2) - engIMeV(i,1)
+         engIMwidth(i,nEngIM) = engIMeV(i,nEngIM) - engIMeV(i,nEngIM - 1)
+         engIMwidth(i,2:nEngIM-1) =	(engIMeV(i,3:nEngIM) - &
+                                    engIMeV(i,2:nEngIM-1))/2&
+              + (engIMeV(i,2:nEngIM-1) - engIMeV(i,1:nEngIM-2))/2
+         engIMwidth(i,:) = engIMwidth(i,:)
       end do
       !write(*,*) 'engUAwidths: ', engUAwidth
       !write(*,*) 'hydIMwidths: ', engIMwidth(1,:)
@@ -124,7 +127,7 @@ module ModImp
       ! every point
       do i = 1, IONO_nTheta; do j = 1, IONO_nPsi
         ! Create new electron energy grid
-        new_eGrid_I = EngIM(2, :) * 1000 + PotIn_II(i, j)
+        new_eGrid_I = engIMeV(2, :) + PotIn_II(i, j)
         ! Create interp indices to GITM Energy grid
         UAs: do k = 1, nEngUA
           ! Less than smallest will be set to 0
@@ -148,54 +151,46 @@ module ModImp
             end do eleIMs
           end if
           ! Do for ions
-          if (EngUA(k) < EngIM(1,1)) then 
+          if (EngUA(k) < engIMeV(1,1)) then 
             hyd_index = -1
             hyd_weight = -1
           ! Greater than largest will be set to 0
-          else if (EngUA(k) > EngIM(1,nEngIM)) then 
+          else if (EngUA(k) > engIMeV(1,nEngIM)) then 
             hyd_index = -1
             hyd_weight = -1
         ! Interpolate between bounds
           else
             hydIMs: do l = 1, nEngIM - 1
-              if (EngUA(k) > EngIM(1,l) .and. EngUA(k) < EngIM(1,l+1)) then
+              if (EngUA(k) > engIMeV(1,l) .and. EngUA(k) < engIMeV(1,l+1)) then
                 hyd_index = l
-                hyd_weight = (log(EngUA(k)) - log(EngIM(1,l))) / &
-                                (log(EngIM(1,l+1)) - log(EngIM(1,l)))
+                hyd_weight = (log(EngUA(k)) - log(engIMeV(1,l))) / &
+                                (log(engIMeV(1,l+1)) - log(engIMeV(1,l)))
                 EXIT hydIMs
               end if
             end do hydIMs
           end if
           if (NameHemiIn == 'north') then
             if(hyd_index >= 0) &
-              IONO_HYDR_NFlux(i,j,k) = (1 - hyd_weight) * engUAwidth(k) * &
+              IONO_HYDR_NFlux(i,j,k) = (1 - hyd_weight) * &
                                     iono_north_im_nHydrPrec(i,j,hyd_index) &
-                                    / engIMwidth(1,hyd_index) &
-                                    + hyd_weight * engUAwidth(k) * &
-                                    iono_north_im_nHydrPrec(i,j,hyd_index + 1)&
-                                    / engIMwidth(1,hyd_index+1)     
+                                    + hyd_weight * &
+                                    iono_north_im_nHydrPrec(i,j,hyd_index + 1)
             if(ele_index >= 0) &
-              IONO_ELEC_NFlux(i,j,k) = (1 - ele_weight) * engUAwidth(k) * &
-                                    iono_north_im_nHydrPrec(i,j,ele_index) &
-                                    / engIMwidth(2,ele_index) &
-                                    + ele_weight * engUAwidth(k) * &
-                                    iono_north_im_nHydrPrec(i,j,ele_index + 1)&
-                                    / engIMwidth(2,ele_index+1)
+              IONO_ELEC_NFlux(i,j,k) = (1 - ele_weight) * &
+                                    iono_north_im_nElecPrec(i,j,ele_index) &
+                                    + ele_weight * &
+                                    iono_north_im_nElecPrec(i,j,ele_index + 1)
           else if (NameHemiIn == 'south') then
             if(hyd_index >= 0) &
-              IONO_HYDR_NFlux(i+IONO_nTheta-1,j,k) = (1 - hyd_weight) * engUAwidth(k) *&
+              IONO_HYDR_NFlux(i+IONO_nTheta-1,j,k) = (1 - hyd_weight) * &
                                     iono_south_im_nHydrPrec(i,j,hyd_index) &
-                                    / engIMwidth(1,hyd_index) &
-                                    + hyd_weight * engUAwidth(k) * &
-                                    iono_south_im_nHydrPrec(i,j,hyd_index + 1) &
-                                    / engIMwidth(1,hyd_index+1)
+                                    + hyd_weight * &
+                                    iono_south_im_nHydrPrec(i,j,hyd_index + 1) 
             if(ele_index >= 0) &                        
-              IONO_ELEC_NFlux(i+IONO_nTheta-1,j,k) = (1 - ele_weight) * engUAwidth(k) *&
-                                    iono_south_im_nHydrPrec(i,j,ele_index) &
-                                    / engIMwidth(2,ele_index) &
-                                    + ele_weight * engUAwidth(k) *&
-                                    iono_south_im_nHydrPrec(i,j,ele_index + 1) &
-                                    / engIMwidth(2,ele_index+1)
+              IONO_ELEC_NFlux(i+IONO_nTheta-1,j,k) = (1 - ele_weight) * &
+                                    iono_south_im_nElecPrec(i,j,ele_index) &
+                                    + ele_weight * &
+                                    iono_south_im_nElecPrec(i,j,ele_index + 1)
           else
             call CON_stop(NameSub//' : unrecognized hemisphere - '//&
                       NameHemiIn)
@@ -203,9 +198,11 @@ module ModImp
         end do UAs
         if (NameHemiIn == 'north') then
             IONO_HYDR_NFlux(i,j,:) = IONO_HYDR_NFlux(i,j,:) * &
-              SUM(IONO_HYDR_NFlux(i,j,:) * engUAwidth) / SUM(iono_north_im_nHydrPrec(i,j,:) * engIMwidth(1,:))
+              SUM(IONO_HYDR_NFlux(i,j,:) * engUAwidth) / &
+              SUM(iono_north_im_nHydrPrec(i,j,:) * engIMwidth(1,:))
             IONO_ELEC_Nflux(i,j,:) = IONO_ELEC_NFlux(i,j,:) * &
-              SUM(IONO_ELEC_NFlux(i,j,:) * engUAwidth) / SUM(iono_north_im_nElecPrec(i,j,:) * engIMwidth(2,:))
+              SUM(IONO_ELEC_NFlux(i,j,:) * engUAwidth) / &
+              SUM(iono_north_im_nElecPrec(i,j,:) * engIMwidth(2,:))
         else if (NameHemiIn == 'south') then
             IONO_HYDR_NFlux(i+IONO_nTheta-1,j,:) = &
               IONO_HYDR_NFlux(i+IONO_nTheta-1,j,:) &
