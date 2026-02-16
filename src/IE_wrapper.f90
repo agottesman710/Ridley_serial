@@ -646,8 +646,8 @@ contains
     ! be shared from UA.
     DoCoupleUA = .true.
 
-    nVar = 4
-    if(present(NameVar_V)) NameVar_V(1:4) = ['lon','lat','hal','ped']
+    nVar = 5
+    if(present(NameVar_V)) NameVar_V(1:5) = ['lon','lat','hal','ped','fac']
 
     nEngUA = nEngInput
 
