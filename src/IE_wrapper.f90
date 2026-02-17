@@ -309,10 +309,6 @@ contains
             LatBoundary = LatBoundary * cDegToRad
          case("#UA")
             call read_var('DoCoupleUaCurrent',DoCoupleUaCurrent)
-            if(DoCoupleUaCurrent)then
-               call read_var('LatBoundary',LatBoundary)
-               LatBoundary = LatBoundary * cDegToRad
-            endif
          case("#SPS")
             call read_var('UseSPS',UseSPS)
             IE_NameOfEFieldModel = "SPS"
