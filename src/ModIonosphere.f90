@@ -30,7 +30,7 @@ module ModIonosphere
   logical :: DoUseGMPe = .false., DoUseGMPpar = .false., DoUseGMPepar = .false.
 
   ! Using IM (total or full spectrum) precipitation
-  logical :: DoUseIMPrecip = .true., DoUseIMSpectrum = .false., 
+  logical :: DoUseIMPrecip = .true., DoUseIMSpectrum = .false., &
              ForceIMSpectrum = .false.
   integer :: nEngIM = 15
   real, allocatable :: EngIM(:,:)

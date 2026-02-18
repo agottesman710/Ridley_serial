@@ -1209,7 +1209,7 @@ contains
     integer,intent(out) :: nVarImIe
     real, intent(in), optional :: EngInput(:, :)
 
-   logical :: DoTest,DoTestMe
+    logical :: DoTest,DoTestMe
     character(len=*), parameter:: NameSub = 'IE_get_info_for_im'
     !--------------------------------------------------------------------------
     call CON_set_do_test(NameSub, DoTest, DoTestMe)

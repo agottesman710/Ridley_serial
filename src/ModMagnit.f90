@@ -86,8 +86,7 @@ module ModMagnit
     ! Set arrays to hold magnetospheric values.
     real, dimension(IONO_nTheta, IONO_nPsi) :: &
         MagP_II, MagNp_II, MagPe_II, MagNe_II, NfluxDiffe_II, NfluxDiffi_II, &
-        NfluxBbnd_II, OCFL_II, FAC_II=0, Joule_II=0, Poynting_II=0, &
-            ElectronTemp_II=0, OCFL_flip_II=0
+        OCFL_II, FAC_II=0, Joule_II=0, ElectronTemp_II=0, OCFL_flip_II=0
 
     integer :: j
 
@@ -158,20 +157,9 @@ module ModMagnit
     ! Calculate monoenergetic electron precipitation
     call monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, &
             AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II)
-!    ! Calculate broadband electron precipitation
-!    ! Note: Joule Heating is in SI Units = W/m2
-     ! Need to figure out where this value came from,
-     ! I don't like a hardcoded 17 Sig Fig constant
-    EfluxBbnd_II = 0
-    AvgEBbnd_II = 0
-    where(Joule_II > 0)
-      Poynting_II = Joule_II * 0.43395593979143521 ! in W/m2
 
-      ! Using empirical relationships from Zhang et al. 2015
-      EfluxBbnd_II = 2e-3 * (ConeEfluxBbnd * Poynting_II) ** 0.5
-      NfluxBbnd_II = 3e13 * (ConeNfluxBbnd * Poynting_II) ** 0.47
-      AvgEBbnd_II = EfluxBbnd_II / (NfluxBbnd_II * cKEV)
-    end where
+    call broadband_flux(Joule_II, EfluxBbnd_II, AvgEBbnd_II)
+
 
   end subroutine magnit_gen_fluxes
   !============================================================================
@@ -233,6 +221,35 @@ module ModMagnit
     ! Calculate Avg E in keV
     AvgEMono_II = EfluxMono_II / (NfluxDiffe_II * cKEV)
   end subroutine monoenergetic_flux
+  !============================================================================
+   subroutine broadband_flux(Joule_II, EfluxBbnd_II, AvgEBbnd_II)
+
+    use ModConst, ONLY: cKEV
+    use ModPlanetConst, ONLY: rPlanet_I, IonoHeightPlanet_I, Earth_
+
+    real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: EfluxBbnd_II, &
+                                                            AvgEBbnd_II
+    real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: Joule_II                                                       
+
+
+    real, dimension(IONO_nTheta, IONO_nPsi) :: Poynting_II=0, NfluxBbnd_II=0
+    !--------------------------------------------------------------------------
+     ! Calculate broadband electron precipitation
+     ! Note: Joule Heating is in SI Units = W/m2
+     ! Need to figure out where this value came from,
+     ! I don't like a hardcoded 17 Sig Fig constant
+    EfluxBbnd_II = 0
+    AvgEBbnd_II = 0
+    where(Joule_II > 0)
+      Poynting_II = Joule_II * 0.43395593979143521 ! in W/m2
+
+      ! Using empirical relationships from Zhang et al. 2015
+      EfluxBbnd_II = 2e-3 * (ConeEfluxBbnd * Poynting_II) ** 0.5
+      NfluxBbnd_II = 3e13 * (ConeNfluxBbnd * Poynting_II) ** 0.47
+      AvgEBbnd_II = EfluxBbnd_II / (NfluxBbnd_II * cKEV)
+    end where
+            
+  end subroutine broadband_flux
   !============================================================================
 
 end module ModMagnit

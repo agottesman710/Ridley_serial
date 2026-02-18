@@ -20,9 +20,10 @@ module ModImp
           EfluxBbnd_II, LatIn_II)
 
       use ModIonosphere, ONLY: DoUseIMSpectrum
-      use ModMagnit, ONLY: monoenergetic_flux
+      use ModMagnit, ONLY: monoenergetic_flux, broadband_flux
       use ModIonosphere, ONLY: IONO_NORTH_JR, IONO_SOUTH_JR, &
-              IONO_NORTH_invB, IONO_SOUTH_invB, &
+              IONO_NORTH_invB, IONO_SOUTH_invB, IONO_NORTH_Joule, &
+              IONO_SOUTH_Joule, &
               iono_north_im_aveeElec, iono_south_im_aveeElec, &
               iono_north_im_efluxElec, iono_south_im_eFluxElec, &
               iono_north_im_aveeHydr, iono_south_im_aveeHydr, &
@@ -37,7 +38,8 @@ module ModImp
       real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: LatIn_II
 
       real, dimension(IONO_nTheta, IONO_nPsi) :: &
-              FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, Potential_II
+              FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, Potential_II, &
+              Joule_II
 
       character(len=*), intent(in) :: NameHemiIn
 
@@ -66,9 +68,11 @@ module ModImp
       if(NameHemiIn == 'north')then
           FAC_II = IONO_NORTH_JR
           OCFL_II = IONO_NORTH_invB
+          Joule_II = IONO_NORTH_Joule
       else if (NameHemiIn == 'south')then
           FAC_II = IONO_SOUTH_JR
           OCFL_II = IONO_SOUTH_invB
+          Joule_II = IONO_SOUTH_Joule
        end if
 
       ! Calculate monoenergetic flux (same as MAGNIT)
@@ -76,6 +80,8 @@ module ModImp
       ElectronTemp_II = 2.0 * AvgEDiffe_II / cKEV ! kEV to J(????)
       call monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, &
               AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, Potential_II)
+
+      call broadband_flux(Joule_II, EfluxBbnd_II, AvgEBbnd_II)
 
       if (DoUseIMSpectrum) then
         call imp_spectral_to_UA(NameHemiIn, Potential_II)
