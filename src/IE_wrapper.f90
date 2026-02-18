@@ -290,6 +290,7 @@ contains
             ! Currently not implemented, intended to be optional use
             ! of full spectrum precipitation/output in ionosphere
             call read_var('DoUseIMSpectrum', DoUseIMSpectrum)
+            call read_var('ForceIMSpectrum', ForceIMSpectrum)
          case("#IPECONDUCTANCE")
             call read_var('UseIpeConductance', UseIpeConductance)
             if(UseIpeConductance)then
@@ -1208,12 +1209,15 @@ contains
     integer,intent(out) :: nVarImIe
     real, intent(in), optional :: EngInput(:, :)
 
-
+   logical :: DoTest,DoTestMe
     character(len=*), parameter:: NameSub = 'IE_get_info_for_im'
     !--------------------------------------------------------------------------
+    call CON_set_do_test(NameSub, DoTest, DoTestMe)
+
     nEngIM = nEngInput
     if(DoUseIMPrecip) then
-        if(use_ua) DoUseIMSpectrum = .true.
+        DoUseIMSpectrum = DoUseIMSpectrum .and. use_ua
+        if (ForceIMSpectrum) DoUseIMSpectrum = .true.
         if(DoUseIMSpectrum) then
             ! Update to 8 once southern hemisphere exists
             nVarImIe = 4 + 2 * nEngIM
@@ -1236,6 +1240,9 @@ contains
         ! Use Old Implementation
         nVarImIe = 3
     end if
+
+    if(DoTest) &
+      write(*,*) NameSub, ' nVarImIe: ', nVarImIe
 
   end subroutine IE_get_info_for_im
   !============================================================================
