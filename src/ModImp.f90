@@ -78,8 +78,7 @@ module ModImp
       ! Calculate monoenergetic flux (same as MAGNIT)
       NfluxDiffe_II = EfluxDiffe_II / AvgEDiffe_II / cKEV
       ! Limit for stability, should probably be removed eventually
-      where(NfluxDiffe_II < 3.0e12) NfluxDiffe_II = 3.0e12 
-      ElectronTemp_II = 2.0 * AvgEDiffe_II / cKEV ! kEV to J(????)
+      ElectronTemp_II = 2.0 * AvgEDiffe_II * cKEV ! kEV to J
       call monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, &
               AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, Potential_II)
 

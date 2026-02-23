@@ -577,8 +577,8 @@ contains
     deallocate(IONO_SOUTH_MONO_EFlux)
     deallocate(IONO_NORTH_BBND_EFlux)
     deallocate(IONO_SOUTH_BBND_EFlux)
-    deallocate(EngUA)
-    deallocate(EngIM)
+    if(allocated(EngUA)) deallocate(EngUA)
+    if(allocated(EngIM))deallocate(EngIM)
 
   end subroutine clean_mod_ionosphere
   !============================================================================
