@@ -105,7 +105,7 @@ module ModImp
                engUAwidth(nEngUA), engIMwidth(2,nEngIM), engIMeV(2, nEngIM)
           integer :: i, j, k, l, hyd_index, ele_index
 
-      character(len=*), parameter:: NameSub = 'imp_spectral_add_potential'
+      character(len=*), parameter:: NameSub = 'imp_spectral_to_UA'
       !------------------------------------------------------------------------
       ! Should replace this later with spline interpolation
       IONO_HYDR_NFlux = 0.
