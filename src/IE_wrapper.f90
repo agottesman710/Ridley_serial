@@ -660,11 +660,12 @@ contains
       allocate(EngUA(nEngUA))
       EngUA = EngInput
 
-      if(.not. allocated(IONO_HYDR_NFlux) .and. DoUseIMSpectrum) &
+      if(.not. allocated(IONO_HYDR_NFlux) .and. DoUseIMSpectrum) then
          allocate(IONO_HYDR_NFlux(2*IONO_nTheta-1,IONO_nPsi,nEngUA), &
                   IONO_ELEC_NFlux(2*IONO_nTheta-1,IONO_nPsi,nEngUA))
          IONO_HYDR_NFlux = 0
          IONO_ELEC_NFlux = 0
+      end if
     end if
 
     if(DoTestMe)then
