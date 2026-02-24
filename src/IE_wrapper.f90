@@ -145,8 +145,16 @@ contains
          ! Turns on IM precipitation flag when IMP is being used
          if(NameAuroraMod == 'IMP') then
              DoUseIMPrecip = .true.
-             write(*,*) 'WARNING, IMP Auroral Model is unfinished'
+             write(*,*) "WARNING, IMP Auroral Model is unfinished"
          end if
+
+         if (NameAuroraMod /= 'IMP' .and. &
+            (DoUseIMSpectrum .or. ForceIMSpectrum)) then
+            call CON_stop(NameSub//" DoUseIMSpectrum and ForceIMSpectrum can"//&
+            "only be used with the IMP auroral model. Use #AURORA and set"//&
+            "NameAuroraMod to IMP to use spectral auroral flux.")
+         end if
+
          ! We should check and correct parameters here
          if(iProc==0)write(*,*) NameSub,': CHECK iSession =',i_session_read()
 
@@ -287,8 +295,6 @@ contains
             call read_var('eCondLimit', eCondLimit)
             call read_var('eLimitScale', eLimitScale)
          case("#IMSPECTRUM")
-            ! Currently not implemented, intended to be optional use
-            ! of full spectrum precipitation/output in ionosphere
             call read_var('DoUseIMSpectrum', DoUseIMSpectrum)
             call read_var('ForceIMSpectrum', ForceIMSpectrum)
          case("#IPECONDUCTANCE")
@@ -626,7 +632,8 @@ contains
     ! IE reports what variables it needs from UA.
     ! UA will use this info to create and fill buffers appropriately.
    use ModIonosphere, ONLY: DoCoupleUA, nEngUA, EngUA, Iono_nTheta, Iono_nPsi, &
-                            IONO_HYDR_NFlux, IONO_ELEC_NFlux
+                            IONO_HYDR_NFlux, IONO_ELEC_NFlux, DoUseIMSpectrum
+
 
     integer, intent(out) :: nVar
     integer, intent(in) :: nEngInput
@@ -653,7 +660,7 @@ contains
       allocate(EngUA(nEngUA))
       EngUA = EngInput
 
-      if(.not. allocated(IONO_HYDR_NFlux)) &
+      if(.not. allocated(IONO_HYDR_NFlux) .and. DoUseIMSpectrum) &
          allocate(IONO_HYDR_NFlux(2*IONO_nTheta-1,IONO_nPsi,nEngUA), &
                   IONO_ELEC_NFlux(2*IONO_nTheta-1,IONO_nPsi,nEngUA))
          IONO_HYDR_NFlux = 0
@@ -674,6 +681,8 @@ contains
 
     use ModProcIE
     use ModIonosphere
+    use ModConductance, ONLY: NameAuroraMod
+
 
     integer,          intent(in)  :: iSize, jSize, nVarIn
     real,             intent(out) :: Buffer_IIV(iSize,jSize,nVarIn)
@@ -743,6 +752,11 @@ contains
     end do
 
     if(present(Buffer_IIIV)) then
+
+      if (NameAuroraMod /= 'IMP' .or. .not. DoUseIMSpectrum) call CON_stop(&
+            NameSub//"GITM spectrum coupling can only be used with the IMP "//&
+            "auroral model. Use #AURORA and set NameAuroraMod to IMP to use "//&
+            "spectral auroral flux.")
 
       Buffer_IIIV = 0.0
    
@@ -1170,7 +1184,6 @@ contains
          iLon >= 1 .and. iLon <= iono_nPsi) then
        if (.not.IsFilledWithIm(iLat,iLon)) then
            ! CIMI full spectrum info
-
            if(DoUseIMPrecip) then
               ! CIMI Precip
                iono_north_im_efluxHydr(iLat,iLon) = buff_v(1)
@@ -1215,9 +1228,10 @@ contains
     call CON_set_do_test(NameSub, DoTest, DoTestMe)
 
     nEngIM = nEngInput
+
     if(DoUseIMPrecip) then
         DoUseIMSpectrum = DoUseIMSpectrum .and. use_ua
-        if (ForceIMSpectrum) DoUseIMSpectrum = .true.
+        if(ForceIMSpectrum) DoUseIMSpectrum = .true.
         if(DoUseIMSpectrum) then
             ! Update to 8 once southern hemisphere exists
             nVarImIe = 4 + 2 * nEngIM
