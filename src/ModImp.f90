@@ -46,24 +46,19 @@ module ModImp
     character(len=*), parameter:: NameSub = 'imp_gen_fluxes'
     !--------------------------------------------------------------------------
       if (trim(NameHemiIn) == 'south') then
-          AvgEDiffe_II = iono_south_im_aveeElec / 1000.0 ! eV to keV
+          AvgEDiffe_II = iono_south_im_aveeElec ! in keV
           EfluxDiffe_II = iono_south_im_efluxElec / 1000.0 ! mW/m^2 to W/m^2
-          AvgEDiffi_II = iono_south_im_aveeHydr / 1000.0
+          AvgEDiffi_II = iono_south_im_aveeHydr
           EfluxDiffi_II = iono_south_im_efluxHydr / 1000.0
       else if (trim(NameHemiIn) == 'north') then
-          AvgEDiffe_II = iono_north_im_aveeElec / 1000.0
+          AvgEDiffe_II = iono_north_im_aveeElec
           EfluxDiffe_II = iono_north_im_efluxElec / 1000.0
-          AvgEDiffi_II = iono_north_im_aveeHydr / 1000.0
+          AvgEDiffi_II = iono_north_im_aveeHydr
           EfluxDiffi_II = iono_north_im_efluxHydr / 1000.0
       else
           call CON_stop(NameSub//' : unrecognized hemisphere - '//&
                   NameHemiIn)
       end if
-
-      ! Limits AvgE (primarily for low latitudes)
-      where(AvgEMono_II > 100) AvgEMono_II = 100
-      where(AvgEDiffe_II > 100)AvgEDiffe_II = 100
-      where(AvgEDiffi_II > 200)AvgEDiffi_II= 200
 
       if(NameHemiIn == 'north')then
           FAC_II = IONO_NORTH_JR
