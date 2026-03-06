@@ -20,7 +20,8 @@ module ModImp
           EfluxBbnd_II, LatIn_II)
 
       use ModIonosphere, ONLY: DoUseIMSpectrum
-      use ModMagnit, ONLY: monoenergetic_flux, broadband_flux
+      use ModMagnit, ONLY: monoenergetic_flux, broadband_flux, &
+           ConeEfluxDifp, ConeNfluxDifp
       use ModIonosphere, ONLY: IONO_NORTH_JR, IONO_SOUTH_JR, &
               IONO_NORTH_invB, IONO_SOUTH_invB, IONO_NORTH_Joule, &
               IONO_SOUTH_Joule, &
@@ -28,8 +29,9 @@ module ModImp
               iono_north_im_efluxElec, iono_south_im_eFluxElec, &
               iono_north_im_aveeHydr, iono_south_im_aveeHydr, &
               iono_north_im_efluxHydr, iono_south_im_eFluxHydr, &
-              iono_north_im_nElecPrec, iono_south_im_nElecPrec             
-      use ModConst, ONLY: cKEV
+              iono_north_im_nElecPrec, iono_south_im_nElecPrec, &
+              iono_north_p, iono_north_rho, iono_south_p, iono_south_rho
+      use ModConst, ONLY: cKEV, cProtonMass, cPi
 
       real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: &
               AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
@@ -39,7 +41,7 @@ module ModImp
 
       real, dimension(IONO_nTheta, IONO_nPsi) :: &
               FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, Potential_II, &
-              Joule_II
+              Joule_II, MagP_II, MagNp_II, NfluxDiffi_II
 
       character(len=*), intent(in) :: NameHemiIn
 
@@ -64,11 +66,29 @@ module ModImp
           FAC_II = IONO_NORTH_JR
           OCFL_II = IONO_NORTH_invB
           Joule_II = IONO_NORTH_Joule
+          ! TEMPORARY
+          MagP_II = iono_north_p
+          MagNp_II = iono_north_rho / cProtonMass
       else if (NameHemiIn == 'south')then
           FAC_II = IONO_SOUTH_JR
           OCFL_II = IONO_SOUTH_invB
           Joule_II = IONO_SOUTH_Joule
-       end if
+          ! TEMPORARY
+          MagP_II = iono_south_p
+          MagNp_II = iono_south_rho / cProtonMass
+      end if 
+
+      ! Temporarily override CIMI ions with MAGNIT
+      ! Will replace when we get EMIC WAVES
+      AvgEDiffi_II  = MagP_II / MagNp_II  ! Temp = P/nk in Joules                                                                                                                                                                                   
+      NfluxDiffi_II = ConeNfluxDifp * MagNp_II * AvgEDiffi_II**0.5 / &
+                    sqrt(2 * cPi * cProtonMass)  ! units of #/m2/s                                                                                                                                                                                   
+      ! units of W/m2                                                                                                                                                                                                                               
+      EfluxDiffi_II = 2 * NfluxDiffi_II * AvgEDiffi_II * &
+            ConeEfluxDifp/ConeNfluxDifp
+      ! Recalc to make consistent with ConeFactors (and get units of keV)                                                                                                                                                                           
+      AvgEDiffi_II = EfluxDiffi_II / (NfluxDiffi_II * cKEV)
+
 
       ! Calculate monoenergetic flux (same as MAGNIT)
       NfluxDiffe_II = EfluxDiffe_II / AvgEDiffe_II / cKEV
