@@ -1086,9 +1086,12 @@ subroutine IE_save_logfile
      end if
 
      call open_file(unitlog, FILE=NameFile, NameCaller=NameSub)
-     write(unitlog,fmt="(a)")  'Ridley Ionosphere Model, [deg] and [kV]'
+     write(unitlog,fmt="(a)")  'Ridley Ionosphere Model, [deg] [kV] [MA] and '&
+                               //'[GW]'
      write(unitlog,fmt="(a)") &
-          't year mo dy hr mn sc msc tilt cpcpn cpcps'
+          't year mo dy hr mn sc msc tilt cpcpn cpcps jr_un jr_us jr_dn jr_ds'&
+          //' hpown hpows hp_diffe_n hp_diffe_s hp_mono_n hp_mono_s hp_bbnd_n'&
+          //' hp_bbnd_s hp_diffi_n hp_diffi_s'
 
      ! Only write data if the simulation time is zero so during
      ! restart we don't repeat the last item from a previous run.
