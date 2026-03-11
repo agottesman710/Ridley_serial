@@ -198,7 +198,7 @@ module ModMagnit
 
     ! Potential calculations only valid where 1 <= NumCoefficient <= MirrorRatio
     where(1 <= PrecipRatio_II .and. PrecipRatio_II < MirrorRatio_II .and. &
-            OCFL_II > 0)
+            OCFL_II > 0 .and. NfluxDiffe_II > 3.0e12)
       ! Put it all together into potential
       Potential_II = ElectronTemp_II / cElectronCharge * (1 - MirrorRatio_II) &
               * LOG((MirrorRatio_II - PrecipRatio_II) / (MirrorRatio_II - 1))
@@ -216,7 +216,7 @@ module ModMagnit
             Potential_II) + AvgEDiffe_II * cKEV
 
     ! Plug into equation for EFlux
-    EfluxMono_II = NfluxMono_II * PotentialTerm_II
+    EfluxMono_II = NfluxDiffe_II * PotentialTerm_II
 
     ! Calculate Avg E in keV
     AvgEMono_II = EfluxMono_II / (NfluxDiffe_II * cKEV)
