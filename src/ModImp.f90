@@ -2,9 +2,9 @@
 ! portions used with permission
 ! For more information, see http://csem.engin.umich.edu/tools/swmf
 
-! Inner Magnetosphere Precipitation model
-
 module ModImp
+
+  ! Inner Magnetosphere Precipitation model
 
   use ModIonosphere, ONLY: IONO_nTheta, IONO_nPsi
 
@@ -13,100 +13,112 @@ module ModImp
   implicit none
   save
 
-  contains
+contains
   !============================================================================
   subroutine imp_gen_fluxes(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II, &
-          AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II,&
-          EfluxBbnd_II, LatIn_II)
+       AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II,&
+       EfluxBbnd_II, LatIn_II)
 
-      use ModIonosphere, ONLY: DoUseIMSpectrum
-      use ModMagnit, ONLY: monoenergetic_flux, broadband_flux, &
-           ConeEfluxDifp, ConeNfluxDifp
-      use ModIonosphere, ONLY: IONO_NORTH_JR, IONO_SOUTH_JR, &
-              IONO_NORTH_invB, IONO_SOUTH_invB, IONO_NORTH_Joule, &
-              IONO_SOUTH_Joule, &
-              iono_north_im_aveeElec, iono_south_im_aveeElec, &
-              iono_north_im_efluxElec, iono_south_im_eFluxElec, &
-              iono_north_im_aveeHydr, iono_south_im_aveeHydr, &
-              iono_north_im_efluxHydr, iono_south_im_eFluxHydr, &
-              iono_north_im_nElecPrec, iono_south_im_nElecPrec, &
-              iono_north_p, iono_north_rho, iono_south_p, iono_south_rho
-      use ModConst, ONLY: cKEV, cProtonMass, cPi
+    use ModIonosphere, ONLY: 
+    use ModMagnit, ONLY: monoenergetic_flux, broadband_flux, smooth_polar_cap
+    use ModIonosphere, ONLY: IONO_NORTH_JR, IONO_SOUTH_JR, &
+         IONO_NORTH_invB, IONO_SOUTH_invB, IONO_NORTH_Poynting, &
+         IONO_SOUTH_Poynting, IONO_north_im_boundary, &
+         IONO_south_im_boundary, DoPolarCapSmoothing, &
+         iono_north_im_aveeElec, iono_south_im_aveeElec, &
+         iono_north_im_efluxElec, iono_south_im_eFluxElec, &
+         iono_north_im_aveeHydr, iono_south_im_aveeHydr, &
+         iono_north_im_efluxHydr, iono_south_im_eFluxHydr, &
+         DoUseIMSpectrum, iono_north_im_nElecPrec, iono_south_im_nElecPrec, &
+         IONO_North_p, IONO_North_rho, IONO_South_p, IONO_South_rho, &
+         DoUseGmPe, IONO_North_Pe, IONO_South_Pe
+    use ModConst, ONLY: cKEV, cProtonMass
 
-      real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: &
-              AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
-              EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II
+    real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: &
+         AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
+         EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II, EfluxBbnd_II
 
-      real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: LatIn_II
+    real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: LatIn_II
 
-      real, dimension(IONO_nTheta, IONO_nPsi) :: &
-              FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, Potential_II, &
-              Joule_II, MagP_II, MagNp_II, NfluxDiffi_II
+    real, dimension(IONO_nTheta, IONO_nPsi) :: &
+         FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, Potential_II, &
+         Poynting_II, ImBoundary_II, MagP_II, MagNp_II, MagPe_II, MagNe_II
 
-      character(len=*), intent(in) :: NameHemiIn
+    character(len=*), intent(in) :: NameHemiIn
 
     character(len=*), parameter:: NameSub = 'imp_gen_fluxes'
     !--------------------------------------------------------------------------
-      if (trim(NameHemiIn) == 'south') then
-          AvgEDiffe_II = iono_south_im_aveeElec ! in keV
-          EfluxDiffe_II = iono_south_im_efluxElec / 1000.0 ! mW/m^2 to W/m^2
-          AvgEDiffi_II = iono_south_im_aveeHydr
-          EfluxDiffi_II = iono_south_im_efluxHydr / 1000.0
-      else if (trim(NameHemiIn) == 'north') then
-          AvgEDiffe_II = iono_north_im_aveeElec
-          EfluxDiffe_II = iono_north_im_efluxElec / 1000.0
-          AvgEDiffi_II = iono_north_im_aveeHydr
-          EfluxDiffi_II = iono_north_im_efluxHydr / 1000.0
-      else
-          call CON_stop(NameSub//' : unrecognized hemisphere - '//&
-                  NameHemiIn)
-      end if
+    if (trim(NameHemiIn) == 'south') then
+      AvgEDiffe_II = iono_south_im_aveeElec ! CIMI gives in keV
+      EfluxDiffe_II = iono_south_im_efluxElec / 1000.0 ! mW/m^2 to W/m^2
+      AvgEDiffi_II = iono_south_im_aveeHydr
+      EfluxDiffi_II = iono_south_im_efluxHydr / 1000.0
+    else if (trim(NameHemiIn) == 'north') then
+      AvgEDiffe_II = iono_north_im_aveeElec
+      EfluxDiffe_II = iono_north_im_efluxElec / 1000.0
+      AvgEDiffi_II = iono_north_im_aveeHydr
+      EfluxDiffi_II = iono_north_im_efluxHydr / 1000.0
+    else
+       call CON_stop(NameSub//' : unrecognized hemisphere - '//&
+                NameHemiIn)
+    end if
 
-      if(NameHemiIn == 'north')then
-          FAC_II = IONO_NORTH_JR
-          OCFL_II = IONO_NORTH_invB
-          Joule_II = IONO_NORTH_Joule
-          ! TEMPORARY
-          MagP_II = iono_north_p
-          MagNp_II = iono_north_rho / cProtonMass
-      else if (NameHemiIn == 'south')then
-          FAC_II = IONO_SOUTH_JR
-          OCFL_II = IONO_SOUTH_invB
-          Joule_II = IONO_SOUTH_Joule
-          ! TEMPORARY
-          MagP_II = iono_south_p
-          MagNp_II = iono_south_rho / cProtonMass
-      end if 
+    where(Poynting_II < 0) Poynting_II = 0
 
-      ! Temporarily override CIMI ions with MAGNIT
-      ! Will replace when we get EMIC WAVES
-      AvgEDiffi_II  = MagP_II / MagNp_II  ! Temp = P/nk in Joules                                                                                                                                                                                   
-      NfluxDiffi_II = ConeNfluxDifp * MagNp_II * AvgEDiffi_II**0.5 / &
-                    sqrt(2 * cPi * cProtonMass)  ! units of #/m2/s                                                                                                                                                                                   
-      ! units of W/m2                                                                                                                                                                                                                               
-      EfluxDiffi_II = 2 * NfluxDiffi_II * AvgEDiffi_II * &
-            ConeEfluxDifp/ConeNfluxDifp
-      ! Recalc to make consistent with ConeFactors (and get units of keV)                                                                                                                                                                           
-      AvgEDiffi_II = EfluxDiffi_II / (NfluxDiffi_II * cKEV)
+    if(NameHemiIn == 'north')then
+      MagP_II = iono_north_p
+      MagNp_II = iono_north_rho / cProtonMass
+      FAC_II = IONO_NORTH_JR
+      OCFL_II = IONO_NORTH_invB
+      Poynting_II = -IONO_NORTH_Poynting
+      if (DoUseGMPe) MagPe_II = iono_north_pe
+      ImBoundary_II = IONO_north_im_boundary
+    else if (NameHemiIn == 'south')then
+      MagP_II = iono_south_p
+      MagNp_II = iono_south_rho / cProtonMass
+      FAC_II = IONO_SOUTH_JR
+      OCFL_II = IONO_SOUTH_invB
+      Poynting_II = -IONO_SOUTH_Poynting
+      if (DoUseGMPe) MagPe_II = iono_south_pe
+      ImBoundary_II = IONO_south_im_boundary
+    end if
 
+    if(.not. DoUseGMPe) then
+      where(OCFL_II < 0) 
+        MagPe_II = MagP_II
+        MagNe_II = MagNe_II
+      end where
+    else
+      where(OCFL_II < 0) 
+        MagNe_II = MagNe_II
+      end where
+    end if
 
-      ! Calculate monoenergetic flux (same as MAGNIT)
-      NfluxDiffe_II = EfluxDiffe_II / AvgEDiffe_II / cKEV
-      ! Limit for stability, should probably be removed eventually
-      ElectronTemp_II = 2.0 * AvgEDiffe_II * cKEV ! kEV to J
-      call monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, &
-              AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, Potential_II)
+    ! Smooth area between closed and open field lines
+    if (DoPolarCapSmoothing) then
+      call smooth_polar_cap(AvgEDiffe_II, OCFL_II, NameHemiIn, ImBoundary_II)
+      call smooth_polar_cap(AvgEDiffi_II, OCFL_II, NameHemiIn, ImBoundary_II)
+      call smooth_polar_cap(EfluxDiffe_II, OCFL_II, NameHemiIn, ImBoundary_II)
+      call smooth_polar_cap(EfluxDiffi_II, OCFL_II, NameHemiIn, ImBoundary_II)
+    end if
 
-      call broadband_flux(Joule_II, EfluxBbnd_II, AvgEBbnd_II)
+    ! Calculate monoenergetic flux (same as MAGNIT)
+    NfluxDiffe_II = EfluxDiffe_II / AvgEDiffe_II / cKEV
+    ! Limit for stability, should probably be removed eventually
+    ElectronTemp_II = 2.0 * AvgEDiffe_II * cKEV ! kEV to J
 
-      if (DoUseIMSpectrum) then
-        call imp_spectral_to_UA(NameHemiIn, Potential_II)
-      end if
+    call monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, &
+            AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, Potential_II)
 
-      ! Add bband
-      contains
+    call broadband_flux(Poynting_II, EfluxBbnd_II, AvgEBbnd_II)
+
+    if (DoUseIMSpectrum) then
+      call imp_spectral_to_UA(NameHemiIn, Potential_II)
+    end if
+
+    contains
     !==========================================================================
-    subroutine imp_spectral_to_UA(NameHemiIn, PotIn_II)
+      subroutine imp_spectral_to_UA(NameHemiIn, PotIn_II)
           use ModIonosphere, ONLY: &
                 iono_north_im_nElecPrec, iono_south_im_nElecPrec, &
                 iono_north_im_nHydrPrec, iono_south_im_nHydrPrec, &
@@ -241,7 +253,7 @@ module ModImp
       enddo; enddo
       
     end subroutine imp_spectral_to_UA
-      !==========================================================================
+    !==========================================================================
   end subroutine imp_gen_fluxes
   !============================================================================
 end module ModImp
