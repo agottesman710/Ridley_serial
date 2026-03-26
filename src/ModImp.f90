@@ -19,7 +19,7 @@ contains
        AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II,&
        EfluxBbnd_II, LatIn_II)
 
-    use ModIonosphere, ONLY: 
+    use ModIonosphere, ONLY:
     use ModMagnit, ONLY: monoenergetic_flux, broadband_flux, smooth_polar_cap
     use ModIonosphere, ONLY: IONO_NORTH_JR, IONO_SOUTH_JR, &
          IONO_NORTH_invB, IONO_SOUTH_invB, IONO_NORTH_Poynting, &
@@ -84,12 +84,12 @@ contains
     end if
 
     if(.not. DoUseGMPe) then
-      where(OCFL_II < 0) 
+      where(OCFL_II < 0)
         MagPe_II = MagP_II
         MagNe_II = MagNe_II
       end where
     else
-      where(OCFL_II < 0) 
+      where(OCFL_II < 0)
         MagNe_II = MagNe_II
       end where
     end if
@@ -144,7 +144,7 @@ contains
       engUAwidth(nEngUA) = EngUA(nEngUA) - EngUA(nEngUA - 1)
       engUAwidth(2:nEngUA-1) = (EngUA(3:nEngUA) - EngUA(2:nEngUA-1))/2 &
            + (EngUA(2:nEngUA-1) - EngUA(1:nEngUA-2))/2
-      
+
       do i = 1, 2
          engIMwidth(i,1) = engIMeV(i,2) - engIMeV(i,1)
          engIMwidth(i,nEngIM) = engIMeV(i,nEngIM) - engIMeV(i,nEngIM - 1)
@@ -153,10 +153,10 @@ contains
               + (engIMeV(i,2:nEngIM-1) - engIMeV(i,1:nEngIM-2))/2
          engIMwidth(i,:) = engIMwidth(i,:)
       end do
-      !write(*,*) 'engUAwidths: ', engUAwidth
-      !write(*,*) 'hydIMwidths: ', engIMwidth(1,:)
-      !write(*,*) 'eleIMwidths: ', engIMwidth(2,:)
-     
+      ! write(*,*) 'engUAwidths: ', engUAwidth
+      ! write(*,*) 'hydIMwidths: ', engIMwidth(1,:)
+      ! write(*,*) 'eleIMwidths: ', engIMwidth(2,:)
+
       ! Now do the same for electrons, except the energy grid is different at
       ! every point
       do i = 1, IONO_nTheta; do j = 1, IONO_nPsi
@@ -165,11 +165,11 @@ contains
         ! Create interp indices to GITM Energy grid
         UAs: do k = 1, nEngUA
           ! Less than smallest will be set to 0
-          if (EngUA(k) < new_eGrid_I(1)) then 
+          if (EngUA(k) < new_eGrid_I(1)) then
             ele_index = -1
             ele_weight = -1
           ! Greater than largest will be set to 0
-          else if (EngUA(k) > new_eGrid_I(nEngIM)) then 
+          else if (EngUA(k) > new_eGrid_I(nEngIM)) then
             ele_index = -1
             ele_weight = -1
         ! Interpolate between bounds
@@ -185,11 +185,11 @@ contains
             end do eleIMs
           end if
           ! Do for ions
-          if (EngUA(k) < engIMeV(1,1)) then 
+          if (EngUA(k) < engIMeV(1,1)) then
             hyd_index = -1
             hyd_weight = -1
           ! Greater than largest will be set to 0
-          else if (EngUA(k) > engIMeV(1,nEngIM)) then 
+          else if (EngUA(k) > engIMeV(1,nEngIM)) then
             hyd_index = -1
             hyd_weight = -1
         ! Interpolate between bounds
@@ -219,8 +219,8 @@ contains
               IONO_HYDR_NFlux(i+IONO_nTheta-1,j,k) = (1 - hyd_weight) * &
                                     iono_south_im_nHydrPrec(i,j,hyd_index) &
                                     + hyd_weight * &
-                                    iono_south_im_nHydrPrec(i,j,hyd_index + 1) 
-            if(ele_index >= 0) &                        
+                                    iono_south_im_nHydrPrec(i,j,hyd_index + 1)
+            if(ele_index >= 0) &
               IONO_ELEC_NFlux(i+IONO_nTheta-1,j,k) = (1 - ele_weight) * &
                                     iono_south_im_nElecPrec(i,j,ele_index) &
                                     + ele_weight * &
@@ -249,9 +249,9 @@ contains
         else
           call CON_stop(NameSub//' : unrecognized hemisphere - '//&
                       NameHemiIn)
-        endif  
+        endif
       enddo; enddo
-      
+
     end subroutine imp_spectral_to_UA
     !==========================================================================
   end subroutine imp_gen_fluxes
