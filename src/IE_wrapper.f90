@@ -107,7 +107,8 @@ contains
            imodel_legacy, DoUseAurora, NameAuroraMod, DoUseDiffI, DoUseDiffE, &
            DoUseMono, DoUseBbnd, UsePrecipSmoothing, KernelType, KernelSize, &
            KernelSpread, eCondRel, eCondLimit, eLimitScale, &
-           UseIpeConductance, LatFullIpe, LatFullRim
+           UseIpeConductance, LatFullIpe, LatFullRim, DoPolarCapSmoothing, &
+           PCapSmoothingSize
       use ModMagnit, ONLY: ConeEfluxDifp, ConeNfluxDifp, ConeEfluxDife, &
               ConeNfluxDife, ConeEfluxMono, ConeNfluxMono, ConeEfluxBbnd, &
               ConeNfluxBbnd
@@ -300,6 +301,9 @@ contains
                  call read_var('KernelSize', KernelSize)
                  call read_var('KernelSpread', KernelSpread)
              end if
+         case("#POLARCAPSMOOTHING")
+            call read_var('DoPolarCapSmoothing', DoPolarCapSmoothing)
+            call read_var('PCapSmoothingSize', PCapSmoothingSize)
          case("#ROBINSONLIMIT")
             call read_var('eCondLimit', eCondLimit)
             call read_var('eLimitScale', eLimitScale)
@@ -812,7 +816,7 @@ contains
     ! Set minimum acceptable values for density & pressure:
     where (Buffer_IIV(:,:,3) < GmRhoFloor) Buffer_IIV(:,:,3)=GmRhoFloor
     where (Buffer_IIV(:,:,4) < GmPFloor  ) Buffer_IIV(:,:,4)=GmPFloor
-    iVar = 7  ! Track variables after standard 6 to fill earliest space in Buffer
+    iVar = 8 ! Track variables after standard 7 to fill earliest space in Buffer
     if (DoUseGMPe) then
         where (Buffer_IIV(:,:,iVar) < GmPeFloor) Buffer_IIV(:,:,iVar)=GmPFloor
         iVar = iVar + 1
@@ -829,7 +833,8 @@ contains
           Iono_North_p    = Buffer_IIV(1:IONO_nTheta,:,4)
           Iono_North_dLat = Buffer_IIV(1:IONO_nTheta,:,5)
           Iono_North_dLon = Buffer_IIV(1:IONO_nTheta,:,6)
-          iVar = 7
+          Iono_North_Poynting = Buffer_IIV(1:IONO_nTheta,:,7)
+          iVar = 8
           if (DoUseGMPe) then
               Iono_North_Pe = Buffer_IIV(1:IONO_nTheta,:,iVar)
               iVar = iVar + 1
@@ -846,7 +851,8 @@ contains
           Iono_South_p    = Buffer_IIV(IONO_nTheta:2*IONO_nTheta-1,:,4)
           Iono_South_dLat = Buffer_IIV(IONO_nTheta:2*IONO_nTheta-1,:,5)
           Iono_South_dLon = Buffer_IIV(IONO_nTheta:2*IONO_nTheta-1,:,6)
-          iVar = 7
+          Iono_South_Poynting = Buffer_IIV(IONO_nTheta:2*IONO_nTheta-1,:,7)
+          iVar = 8
           if (DoUseGMPe) then
               Iono_South_Pe = Buffer_IIV(IONO_nTheta:2*IONO_nTheta-1,:,iVar)
               iVar = iVar + 1
@@ -1200,11 +1206,12 @@ contains
                iono_north_im_aveeHydr(iLat,iLon)  = buff_v(2)
                iono_north_im_efluxElec(iLat,iLon) = buff_v(3)
                iono_north_im_aveeElec(iLat,iLon)  = buff_v(4)
+               iono_north_im_boundary(iLat,iLon)  = buff_v(5)
                if(DoUseIMSpectrum) then
                   iono_north_im_nHydrPrec(iLat,iLon,:) = &
-                        buff_v(5:4+nEngIM)
+                        buff_v(6:5+nEngIM)
                   iono_north_im_nElecPrec(iLat,iLon,:) = &
-                        buff_v(5+nEngIM:4+2*nEngIM)
+                        buff_v(6+nEngIM:5+2*nEngIM)
                endif
            else
            ! Old coupling
@@ -1244,7 +1251,7 @@ contains
         if(ForceIMSpectrum) DoUseIMSpectrum = .true.
         if(DoUseIMSpectrum) then
             ! Update to 8 once southern hemisphere exists
-            nVarImIe = 4 + 2 * nEngIM
+            nVarImIe = 5 + 2 * nEngIM
             if(.not. allocated(IONO_north_im_nElecPrec)) &
                allocate(IONO_north_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM), &
                         IONO_south_im_nElecPrec(IONO_nTheta,IONO_nPsi,nEngIM), &
@@ -1258,7 +1265,8 @@ contains
                EngIM = EngInput
             endif
         else
-            nVarImIe = 4
+         ! elseif (do use iba)
+            nVarImIe = 5
         end if
     else
         ! Use Old Implementation
@@ -1399,26 +1407,30 @@ contains
             iono_north_im_aveeElec = ImAveEFloor
 
       if (nProc > 1) then
-            iError = 0
-            call MPI_Bcast(iono_north_im_efluxHydr, iono_nTheta*iono_nPsi, &
-                  MPI_Real, 0, iComm, iError)
-            call MPI_Bcast(iono_north_im_aveeHydr, iono_nTheta*iono_nPsi, &
-                  MPI_Real, 0, iComm, iError)
-            call MPI_Bcast(iono_north_im_efluxElec, iono_nTheta*iono_nPsi, &
-                  MPI_Real, 0, iComm, iError)
-            call MPI_Bcast(iono_north_im_aveeElec, iono_nTheta*iono_nPsi, &
-                  MPI_Real, 0, iComm, iError)
+         iError = 0
+         call MPI_Bcast(iono_north_im_efluxHydr, iono_nTheta*iono_nPsi, &
+               MPI_Real, 0, iComm, iError)
+         call MPI_Bcast(iono_north_im_aveeHydr, iono_nTheta*iono_nPsi, &
+               MPI_Real, 0, iComm, iError)
+         call MPI_Bcast(iono_north_im_efluxElec, iono_nTheta*iono_nPsi, &
+               MPI_Real, 0, iComm, iError)
+         call MPI_Bcast(iono_north_im_aveeElec, iono_nTheta*iono_nPsi, &
+               MPI_Real, 0, iComm, iError)
+         call MPI_Bcast(iono_north_im_boundary, iono_nTheta*iono_nPsi, &
+               MPI_Real, 0, iComm, iError)
       endif
 
       do i = 1, IONO_nTheta
-            iono_south_im_efluxHydr(i,:) = &
-                  iono_north_im_efluxHydr(Iono_nTheta-i+1,:)
-            iono_south_im_aveeHydr(i,:) = &
-                  iono_north_im_aveeHydr(Iono_nTheta-i+1,:)
-            iono_south_im_efluxElec(i,:) = &
-                  iono_north_im_efluxElec(Iono_nTheta-i+1,:)
-            iono_south_im_aveeElec(i,:) = &
-                  iono_north_im_aveeElec(Iono_nTheta-i+1,:)
+         iono_south_im_efluxHydr(i,:) = &
+               iono_north_im_efluxHydr(Iono_nTheta-i+1,:)
+         iono_south_im_aveeHydr(i,:) = &
+               iono_north_im_aveeHydr(Iono_nTheta-i+1,:)
+         iono_south_im_efluxElec(i,:) = &
+               iono_north_im_efluxElec(Iono_nTheta-i+1,:)
+         iono_south_im_aveeElec(i,:) = &
+               iono_north_im_aveeElec(Iono_nTheta-i+1,:)
+         iono_south_im_boundary(i,:) = &
+               iono_north_im_boundary(Iono_nTheta-i+1,:)
 
       enddo
       if(DoUseIMSpectrum) then

@@ -47,6 +47,10 @@ module ModIonosphere
   ! Using GITM?
   logical :: DoCoupleUA = .false.
 
+  ! Size without IM in degrees
+  logical :: DoPolarCapSmoothing = .true.
+  real :: PCapSmoothingSize = 5.0
+
   ! Ionosphere Solution on the whole grid
   real, allocatable :: IONO_Phi(:,:)
   real, allocatable :: IONO_IonNumFlux(:,:)
@@ -174,6 +178,8 @@ module ModIonosphere
   real, allocatable :: iono_south_im_nElecPrec(:,:,:)
   real, allocatable :: iono_north_im_nHydrPrec(:,:,:)
   real, allocatable :: iono_south_im_nHydrPrec(:,:,:)
+  real, allocatable :: iono_north_im_boundary(:,:)
+  real, allocatable :: iono_south_im_boundary(:,:)
   ! Sources of Conductances
   real, allocatable :: IONO_NORTH_DIFFI_Ave_E(:,:)
   real, allocatable :: IONO_SOUTH_DIFFI_Ave_E(:,:)
@@ -207,8 +213,8 @@ module ModIonosphere
   real, allocatable :: IONO_SOUTH_Pe(:,:)
   real, allocatable :: IONO_NORTH_Pepar(:,:)
   real, allocatable :: IONO_SOUTH_Pepar(:,:)
-  real, allocatable :: IONO_NORTH_t(:,:)
-  real, allocatable :: IONO_SOUTH_t(:,:)
+  real, allocatable :: IONO_NORTH_Poynting(:,:) ! GM || Poynting Flux
+  real, allocatable :: IONO_SOUTH_Poynting(:,:)
   real, allocatable :: IONO_NORTH_dLat(:,:)
   real, allocatable :: IONO_SOUTH_dLat(:,:)
   real, allocatable :: IONO_NORTH_dLon(:,:)
@@ -348,6 +354,8 @@ contains
       allocate(IONO_south_im_aveeHydr(IONO_nTheta,IONO_nPsi))
       allocate(IONO_north_im_efluxHydr(IONO_nTheta,IONO_nPsi))
       allocate(IONO_south_im_efluxHydr(IONO_nTheta,IONO_nPsi))
+      allocate(iono_north_im_boundary( IONO_nTheta,IONO_nPsi))
+      allocate(iono_south_im_boundary( IONO_nTheta,IONO_nPsi))
     else
       allocate(IONO_north_im_avee(IONO_nTheta,IONO_nPsi))
       allocate(IONO_south_im_avee(IONO_nTheta,IONO_nPsi))
@@ -367,8 +375,8 @@ contains
     allocate(IONO_SOUTH_Pe(IONO_nTheta,IONO_nPsi))
     allocate(IONO_NORTH_Pepar(IONO_nTheta,IONO_nPsi))
     allocate(IONO_SOUTH_Pepar(IONO_nTheta,IONO_nPsi))
-    allocate(IONO_NORTH_t(IONO_nTheta,IONO_nPsi))
-    allocate(IONO_SOUTH_t(IONO_nTheta,IONO_nPsi))
+    allocate(IONO_NORTH_Poynting(IONO_nTheta,IONO_nPsi))
+    allocate(IONO_SOUTH_Poynting(IONO_nTheta,IONO_nPsi))
     allocate(IONO_NORTH_dLat(IONO_nTheta,IONO_nPsi))
     allocate(IONO_SOUTH_dLat(IONO_nTheta,IONO_nPsi))
     allocate(IONO_NORTH_dLon(IONO_nTheta,IONO_nPsi))
@@ -537,6 +545,8 @@ contains
     if(allocated(IONO_SOUTH_UA_SigmaH)) deallocate(IONO_SOUTH_UA_SigmaH)
     if(allocated(IONO_NORTH_UA_SigmaP)) deallocate(IONO_NORTH_UA_SigmaP)
     if(allocated(IONO_SOUTH_UA_SigmaP)) deallocate(IONO_SOUTH_UA_SigmaP)
+    if(allocated(IONO_north_im_boundary)) deallocate(IONO_north_im_boundary)
+    if(allocated(IONO_south_im_boundary)) deallocate(IONO_south_im_boundary)
     deallocate(IsFilledWithIm)
     deallocate(IONO_NORTH_invB)
     deallocate(IONO_SOUTH_invB)
@@ -550,8 +560,8 @@ contains
     deallocate(IONO_SOUTH_Pe)
     deallocate(IONO_NORTH_Pepar)
     deallocate(IONO_SOUTH_Pepar)
-    deallocate(IONO_NORTH_t)
-    deallocate(IONO_SOUTH_t)
+    deallocate(IONO_NORTH_Poynting)
+    deallocate(IONO_SOUTH_Poynting)
     deallocate(IONO_NORTH_dLat)
     deallocate(IONO_SOUTH_dLat)
     deallocate(IONO_NORTH_dLon)
