@@ -19,7 +19,6 @@ contains
        AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II,&
        EfluxBbnd_II, LatIn_II)
 
-    use ModIonosphere, ONLY:
     use ModMagnit, ONLY: monoenergetic_flux, broadband_flux, smooth_polar_cap
     use ModIonosphere, ONLY: IONO_NORTH_JR, IONO_SOUTH_JR, &
          IONO_NORTH_invB, IONO_SOUTH_invB, IONO_NORTH_Poynting, &
