@@ -340,8 +340,8 @@ module ModMagnit
                     if (OCFL_II(i,j) > 0) EXIT boundaryGMN
                 end do boundaryGMN
                 ! closed_max = closed_max + diff/2
-                closed_max = closed_max + 1
-                open_min = closed_max - diff
+                closed_max = max(closed_max + 1, 1)
+                open_min = max(closed_max - diff, 1)
                 ! Linearly reconstruct gap
                 do i = open_min, closed_max
                     var_II(i,j) = var_II(open_min,j) * real(closed_max-i)/diff &
@@ -354,8 +354,8 @@ module ModMagnit
                     if (OCFL_II(i,j) > 0) EXIT boundaryGMS
                 end do boundaryGMS
                 ! closed_max = closed_max - diff/2
-                closed_max = closed_max - 1
-                open_min = closed_max + diff
+                closed_max = min(closed_max - 1, IONO_nTheta-1)
+                open_min = min(closed_max + diff, IONO_nTheta-1)
                 ! Linearly reconstruct gap
                 do i = open_min, closed_max, - 1
                     var_II(i,j) = var_II(open_min,j) * real(i-closed_max)/diff &
