@@ -130,7 +130,7 @@ module ModMagnit
     ! Scale Pe using ratioPe
     if(.not. DoUseGMPe) then
       do j=1, Iono_nPsi
-        do i = I, Iono_nTheta
+        do i = 1, Iono_nTheta
             if(OCFL_II(i,j) > 0 .and. OCFL_II(i, IONO_nPsi-j+1) > 0) then
                 MagPe_II(i, j) = ratioPe * MagP_II(i, IONO_nPsi-j+1)
                 MagNe_II(i, j) = MagNp_II(i, IONO_nPsi-j+1)
