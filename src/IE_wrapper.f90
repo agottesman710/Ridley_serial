@@ -1386,7 +1386,8 @@ contains
     use ModProcIE
     use ModIonosphere
     use ModMpi
-    use ModConductance, ONLY: IsImCoupled, ImEfluxFloor, ImAveEFloor
+    use ModConductance, ONLY: IsImCoupled
+    use ModImp, ONLY: ImEfluxFloor, ImAveEFloor
 
     !--------------------------------------------------------------------------
     integer iError, i

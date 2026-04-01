@@ -13,13 +13,16 @@ module ModImp
   implicit none
   save
 
+  real, parameter :: ImEfluxFloor = 1E-3, ImAveEFloor = 1E-6
+
 contains
   !============================================================================
   subroutine imp_gen_fluxes(NameHemiIn, AvgEDiffe_II, AvgEDiffi_II, &
        AvgEMono_II, AvgEBbnd_II, EfluxDiffe_II, EfluxDiffi_II, EfluxMono_II,&
        EfluxBbnd_II, LatIn_II)
 
-    use ModMagnit, ONLY: monoenergetic_flux, broadband_flux, smooth_polar_cap
+    use ModMagnit, ONLY: monoenergetic_flux, broadband_flux, smooth_polar_cap,&
+                  ConeEfluxDifp, ConeNfluxDifp, ConeEfluxDife, ConeNfluxDife
     use ModIonosphere, ONLY: IONO_NORTH_JR, IONO_SOUTH_JR, &
          IONO_NORTH_invB, IONO_SOUTH_invB, IONO_NORTH_Poynting, &
          IONO_SOUTH_Poynting, IONO_north_im_boundary, &
@@ -31,7 +34,7 @@ contains
          DoUseIMSpectrum, iono_north_im_nElecPrec, iono_south_im_nElecPrec, &
          IONO_North_p, IONO_North_rho, IONO_South_p, IONO_South_rho, &
          DoUseGmPe, IONO_North_Pe, IONO_South_Pe
-    use ModConst, ONLY: cKEV, cProtonMass
+    use ModConst, ONLY: cKEV, cProtonMass, cElectronMass, cPi
 
     real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: &
          AvgEDiffe_II, AvgEDiffi_II, AvgEMono_II, AvgEBbnd_II, &
@@ -41,7 +44,8 @@ contains
 
     real, dimension(IONO_nTheta, IONO_nPsi) :: &
          FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, Potential_II, &
-         Poynting_II, ImBoundary_II, MagP_II, MagNp_II, MagPe_II, MagNe_II
+         Poynting_II, ImBoundary_II, MagP_II, MagNp_II, MagPe_II, MagNe_II, &
+         NfluxDiffi_II
 
     character(len=*), intent(in) :: NameHemiIn
 
@@ -61,6 +65,12 @@ contains
        call CON_stop(NameSub//' : unrecognized hemisphere - '//&
                 NameHemiIn)
     end if
+
+    ! Calculate monoenergetic flux (same as MAGNIT)
+    NfluxDiffe_II = EfluxDiffe_II / AvgEDiffe_II / cKEV
+    where(NfluxDiffe_II < 1E11) AvgEDiffe_II = ImAveEFloor
+
+    ElectronTemp_II = 2.0 * AvgEDiffe_II * cKEV ! kEV to J
 
     where(Poynting_II < 0) Poynting_II = 0
 
@@ -93,21 +103,38 @@ contains
       end where
     end if
 
+    ! Calculate diffuse precipitation: protons.
+    AvgEDiffi_II  = MagP_II / MagNp_II  ! Temp = P/nk in Joules
+    NfluxDiffi_II = ConeNfluxDifp * MagNp_II * AvgEDiffi_II**0.5 / &
+                    sqrt(2 * cPi * cProtonMass)  ! units of #/m2/s
+    ! units of W/m2
+    EfluxDiffi_II = 2 * NfluxDiffi_II * AvgEDiffi_II * &
+            ConeEfluxDifp/ConeNfluxDifp
+    ! Recalc to make consistent with ConeFactors (and get units of keV)
+    AvgEDiffi_II = EfluxDiffi_II / (NfluxDiffi_II * cKEV)
+
+    where(OCFL_II < 0) 
+      ElectronTemp_II  = MagPe_II / MagNe_II  ! T = P/nk in Joules
+      NfluxDiffe_II = ConeNfluxDife * MagNe_II * ElectronTemp_II**0.5 / &
+                  sqrt(2 * cPi * cElectronMass)  ! units of #/m2/s
+      ! units of W/m2
+      EfluxDiffe_II = 2 * NfluxDiffe_II * ElectronTemp_II * &
+              ConeEfluxDife/ConeNfluxDife
+      ! Recalc to make consistent with ConeFactors (and get units of keV)
+      AvgEDiffe_II = EfluxDiffe_II / (NfluxDiffe_II * cKEV)
+    end where
+
     ! Smooth area between closed and open field lines
     if (DoPolarCapSmoothing) then
-      call smooth_polar_cap(AvgEDiffe_II, OCFL_II, NameHemiIn, ImBoundary_II)
-      call smooth_polar_cap(AvgEDiffi_II, OCFL_II, NameHemiIn, ImBoundary_II)
+      call smooth_polar_cap(AvgEDiffe_II, OCFL_II, NameHemiIn)
+      call smooth_polar_cap(AvgEDiffi_II, OCFL_II, NameHemiIn)
       call smooth_polar_cap(EfluxDiffe_II, OCFL_II, NameHemiIn, ImBoundary_II)
       call smooth_polar_cap(EfluxDiffi_II, OCFL_II, NameHemiIn, ImBoundary_II)
     end if
 
-    ! Calculate monoenergetic flux (same as MAGNIT)
-    NfluxDiffe_II = EfluxDiffe_II / AvgEDiffe_II / cKEV
-    ! Limit for stability, should probably be removed eventually
-    ElectronTemp_II = 2.0 * AvgEDiffe_II * cKEV ! kEV to J
-
     call monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, &
-            AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, Potential_II)
+            AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, &
+            PotOut_II=Potential_II, ImIn_II=ImBoundary_II)
 
     call broadband_flux(Poynting_II, EfluxBbnd_II, AvgEBbnd_II)
 

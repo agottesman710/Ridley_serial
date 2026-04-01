@@ -157,7 +157,7 @@ module ModMagnit
     ! Recalc to make consistent with ConeFactors (and get units of keV)
     AvgEDiffi_II = EfluxDiffi_II / (NfluxDiffi_II * cKEV)
 
-! Calculate diffuse precipitation: electrons.
+    ! Calculate diffuse precipitation: electrons.
     ElectronTemp_II  = MagPe_II / MagNe_II  ! T = P/nk in Joules
 
     NfluxDiffe_II = ConeNfluxDife * MagNe_II * ElectronTemp_II**0.5 / &
@@ -188,14 +188,15 @@ module ModMagnit
   !============================================================================
   subroutine monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, &
           ElectronTemp_II, AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, &
-          PotOut_II)
+          PotOut_II, ImIn_II)
 
     use ModConst, ONLY: cKEV
     use ModPlanetConst, ONLY: rPlanet_I, IonoHeightPlanet_I, Earth_
 
     real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: EfluxMono_II, &
                                                             AvgEMono_II
-    real, intent(out), dimension(IONO_nTheta, IONO_nPsi), optional :: PotOut_II                                                            
+    real, intent(out), dimension(IONO_nTheta, IONO_nPsi), optional :: PotOut_II
+    real, intent(in), dimension(IONO_nTheta, IONO_nPsi), optional :: ImIn_II  
 
     ! Import Hemispheric Latitudes for Magnetic Field Calculations
     real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: FAC_II, LatIn_II, &
@@ -203,7 +204,7 @@ module ModMagnit
 
     real, dimension(IONO_nTheta, IONO_nPsi) :: PrecipRatio_II=0, &
             Potential_II=0, MirrorRatio_II=0, VExponent_II=0, &
-            PotentialTerm_II=0, NfluxMono_II
+            PotentialTerm_II=0, NfluxMono_II, ImBoundary_II=0
     !--------------------------------------------------------------------------
     ! Calculate discrete electron precipitation
     ! Calculate Nflux from current
@@ -224,12 +225,18 @@ module ModMagnit
         PrecipRatio_II = MirrorRatio_II
     end where
 
+    if(present(ImIn_II)) then
+        ImBoundary_II = ImIn_II
+    else 
+        ImBoundary_II = 0
+    end if
+
     ! Potential calculations only valid where 1 <= NumCoefficient <= MirrorRatio
-    where(1 <= PrecipRatio_II .and. OCFL_II > 0)
+    where(1 <= PrecipRatio_II .and. OCFL_II > 0 .and. ImBoundary_II == 0)
       ! Put it all together into potential
       Potential_II = ElectronTemp_II / cElectronCharge * (1 - MirrorRatio_II) &
               * LOG((MirrorRatio_II - PrecipRatio_II) / (MirrorRatio_II - 1))
-    elsewhere(1 <= PrecipRatio_II .and. OCFL_II < 0)
+    elsewhere(1 <= PrecipRatio_II .and. OCFL_II < 0 .and. ImBoundary_II == 0)
       Potential_II = ElectronTemp_II * (PrecipRatio_II - 1)
     elsewhere
       NfluxMono_II = NfluxDiffe_II
@@ -245,10 +252,11 @@ module ModMagnit
             Potential_II) + AvgEDiffe_II * cKEV
 
     ! Plug into equation for EFlux
-    EfluxMono_II = NfluxDiffe_II * PotentialTerm_II
+    EfluxMono_II = NfluxMono_II * PotentialTerm_II
 
     ! Calculate Avg E in keV
     AvgEMono_II = EfluxMono_II / (NfluxDiffe_II * cKEV)
+
   end subroutine monoenergetic_flux
   !============================================================================
    subroutine broadband_flux(Poynting_II, EfluxBbnd_II, AvgEBbnd_II)
