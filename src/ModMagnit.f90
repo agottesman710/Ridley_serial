@@ -303,7 +303,7 @@ module ModMagnit
         do j = 1, Iono_nPsi
             if (NameHemiIn == 'north') then
                 open_min = 1
-                boundaryIMN: do i = 1, Iono_nPsi
+                boundaryIMN: do i = 1, Iono_nTheta
                     if (OCFL_II(i,j) < 0) open_min = i
                     if (ImBoundary_II(i,j) > 0) then
                         closed_max = i
@@ -319,8 +319,8 @@ module ModMagnit
                                 + var_II(closed_max,j) * real(i - open_min)/diff
                 end do
             else
-                open_min = IONO_nPsi
-                boundaryIMS: do i = IONO_nPsi, 1, -1
+                open_min = IONO_nTheta
+                boundaryIMS: do i = IONO_nTheta, 1, -1
                     if (OCFL_II(i,j) < 0) open_min = i
                     if (ImBoundary_II(i,j) > 0) then
                         closed_max = i
@@ -337,12 +337,12 @@ module ModMagnit
                 end do
             end if
         end do
-    ! If IM boundary is not present, use size in degrees (defaults to 2 degrees)
+    ! If IM boundary is not present, use size in degrees (defaults to 5 degrees)
     else
         diff = CEILING(PCapSmoothingSize * (IONO_nTheta-1) / 90)
         do j = 1, Iono_nPsi
             if (NameHemiIn == 'north') then
-                open_min = 1
+                closed_max = 1
                 boundaryGMN: do i = 1, Iono_nTheta
                     if (OCFL_II(i,j) < 0) closed_max = i
                     if (OCFL_II(i,j) > 0) EXIT boundaryGMN
@@ -356,16 +356,16 @@ module ModMagnit
                                 + var_II(closed_max,j) * real(i-open_min)/diff
                 end do
             else
-                open_min = IONO_nPsi
+                closed_max = IONO_nTheta
                 boundaryGMS: do i = IONO_nTheta, 1, -1
                     if (OCFL_II(i,j) < 0) closed_max = i
                     if (OCFL_II(i,j) > 0) EXIT boundaryGMS
                 end do boundaryGMS
                 ! closed_max = closed_max - diff/2
-                closed_max = min(closed_max - 1, IONO_nTheta-1)
-                open_min = min(closed_max + diff, IONO_nTheta-1)
+                closed_max = min(closed_max - 1, IONO_nTheta)
+                open_min = min(closed_max + diff, IONO_nTheta)
                 ! Linearly reconstruct gap
-                do i = open_min, closed_max, - 1
+                do i = open_min, closed_max, -1
                     var_II(i,j) = var_II(open_min,j) * real(i-closed_max)/diff &
                                 + var_II(closed_max,j) * real(open_min-i)/diff
                 end do
