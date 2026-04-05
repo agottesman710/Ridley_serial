@@ -146,7 +146,7 @@ contains
          ! Turns on IM precipitation flag when IMP is being used
          if(NameAuroraMod == 'IMP') then
              DoUseIMPrecip = .true.
-             if(.not. allocated(IONO_north_im_aveeElec)) & 
+             if(.not. allocated(IONO_north_im_aveeElec)) &
              allocate(IONO_north_im_aveeElec(IONO_nTheta,IONO_nPsi), &
                       IONO_south_im_aveeElec(IONO_nTheta,IONO_nPsi), &
                       IONO_north_im_efluxElec(IONO_nTheta,IONO_nPsi), &
@@ -154,7 +154,9 @@ contains
                       IONO_north_im_aveeHydr(IONO_nTheta,IONO_nPsi), &
                       IONO_south_im_aveeHydr(IONO_nTheta,IONO_nPsi), &
                       IONO_north_im_efluxHydr(IONO_nTheta,IONO_nPsi), &
-                      IONO_south_im_efluxHydr(IONO_nTheta,IONO_nPsi))
+                      IONO_south_im_efluxHydr(IONO_nTheta,IONO_nPsi), &
+                      iono_north_im_boundary(IONO_nTheta,IONO_nPsi), &
+                      iono_south_im_boundary(IONO_nTheta,IONO_nPsi))
              write(*,*) "WARNING, IMP Auroral Model is unfinished"
          end if
 
