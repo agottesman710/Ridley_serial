@@ -305,7 +305,9 @@ contains
              end if
          case("#POLARCAPSMOOTHING")
             call read_var('DoPolarCapSmoothing', DoPolarCapSmoothing)
-            call read_var('PCapSmoothingSize', PCapSmoothingSize)
+            if (DoPolarCapSmoothing) then
+               call read_var('PCapSmoothingSize', PCapSmoothingSize)
+            end if
          case("#ROBINSONLIMIT")
             call read_var('eCondLimit', eCondLimit)
             call read_var('eLimitScale', eLimitScale)
