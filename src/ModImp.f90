@@ -95,13 +95,14 @@ contains
     if(.not. DoUseGMPe) then
       where(OCFL_II < 0)
         MagPe_II = MagP_II
-        MagNe_II = MagNe_II
+        MagNe_II = MagNp_II
       end where
     else
       where(OCFL_II < 0)
-        MagNe_II = MagNe_II
+        MagNe_II = MagNp_II
       end where
-    end if
+   end if
+   
 
     ! Calculate diffuse precipitation: protons.
     AvgEDiffi_II  = MagP_II / MagNp_II  ! Temp = P/nk in Joules
