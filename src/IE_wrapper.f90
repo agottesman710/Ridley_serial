@@ -102,13 +102,14 @@ contains
       use ModReadParam
       use ModIE_Interface
       use ModFiles
+      use IE_ModMain, ONLY: DoCoupleUaCurrent
       use ModConductance, ONLY: DoUseEuvCond, f107_flux, &
            PolarCapPedCond, StarLightCond, SigmaHalConst, SigmaPedConst, &
            imodel_legacy, DoUseAurora, NameAuroraMod, DoUseDiffI, DoUseDiffE, &
            DoUseMono, DoUseBbnd, UsePrecipSmoothing, KernelType, KernelSize, &
            KernelSpread, eCondRel, eCondLimit, eLimitScale, &
            UseIpeConductance, LatFullIpe, LatFullRim, DoPolarCapSmoothing, &
-           PCapSmoothingSize
+           PCapSmoothingSize, DoCoupleUaConductance
       use ModMagnit, ONLY: ConeEfluxDifp, ConeNfluxDifp, ConeEfluxDife, &
               ConeNfluxDife, ConeEfluxMono, ConeNfluxMono, ConeEfluxBbnd, &
               ConeNfluxBbnd
@@ -944,8 +945,8 @@ contains
   !============================================================================
   subroutine IE_put_from_ua(Buffer_IIBV, nMLTs, nLats, nVarIn, NameVarUaIn_V)
 
-    use IE_ModMain, ONLY: IsNewInput, DoCoupleUaCurrent
-    use ModConductance, ONLY: StarLightCond, IsUaCoupled, DoCoupleUaConductance
+    use IE_ModMain, ONLY: IsNewInput
+    use ModConductance, ONLY: StarLightCond, IsUaCoupled
     use ModIonosphere
     use ModConst
     use ModUtilities, ONLY: check_allocate
