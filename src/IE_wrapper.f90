@@ -334,6 +334,7 @@ contains
             call read_var('LatBoundary',LatBoundary)
             LatBoundary = LatBoundary * cDegToRad
          case("#UA")
+            call read_var('DoCoupleUaConductance',DoCoupleUaConductance)
             call read_var('DoCoupleUaCurrent',DoCoupleUaCurrent)
          case("#SPS")
             call read_var('UseSPS',UseSPS)
@@ -944,7 +945,7 @@ contains
   subroutine IE_put_from_ua(Buffer_IIBV, nMLTs, nLats, nVarIn, NameVarUaIn_V)
 
     use IE_ModMain, ONLY: IsNewInput, DoCoupleUaCurrent
-    use ModConductance, ONLY: StarLightCond, IsUaCoupled
+    use ModConductance, ONLY: StarLightCond, IsUaCoupled, DoCoupleUaConductance
     use ModIonosphere
     use ModConst
     use ModUtilities, ONLY: check_allocate

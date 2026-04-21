@@ -20,7 +20,8 @@ module ModConductance
   ! Logicals to control what conductance sources are used.
   logical :: DoUseEuvCond=.true., DoUseAurora=.true., DoUseDiffI=.true., &
        DoUseDiffE=.true., DoUseMono=.true., DoUseBbnd=.true., &
-       UsePrecipSmoothing=.true., IsImCoupled=.false., IsUaCoupled=.false.
+       UsePrecipSmoothing=.true., IsImCoupled=.false., IsUaCoupled=.false., &
+       DoCoupleUaConductance=.true.
 
   ! Use IPE conductances?
   logical:: UseIpeConductance = .false.
@@ -238,7 +239,7 @@ contains
 
     ! Sum conductance into the correct hemisphere.
     if(NameHemiIn == 'north')then
-       if (IsUaCoupled) then
+       if (IsUaCoupled .and. DoCoupleUaConductance) then
           IONO_NORTH_SigmaH = IONO_NORTH_UA_SigmaH
           IONO_NORTH_SigmaP = IONO_NORTH_UA_SigmaP
           if(DoTest) &
