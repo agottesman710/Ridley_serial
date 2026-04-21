@@ -22,7 +22,8 @@ contains
        EfluxBbnd_II, LatIn_II)
 
     use ModMagnit, ONLY: monoenergetic_flux, broadband_flux, smooth_polar_cap,&
-                  ConeEfluxDifp, ConeNfluxDifp, ConeEfluxDife, ConeNfluxDife
+         ConeEfluxDifp, ConeNfluxDifp, ConeEfluxDife, ConeNfluxDife, &
+         ratioPe
     use ModIonosphere, ONLY: IONO_NORTH_JR, IONO_SOUTH_JR, &
          IONO_NORTH_invB, IONO_SOUTH_invB, IONO_NORTH_Poynting, &
          IONO_SOUTH_Poynting, IONO_north_im_boundary, &
@@ -45,7 +46,8 @@ contains
     real, dimension(IONO_nTheta, IONO_nPsi) :: &
          FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, Potential_II, &
          Poynting_II, ImBoundary_II, MagP_II, MagNp_II, MagPe_II, MagNe_II, &
-         NfluxDiffi_II
+         NfluxDiffi_II, MhdElectronTemp_II, MhdNfluxDiffe_II, MhdAvgEDiffe_II, &
+         MhdEfluxMono_II, MhdAvgEMono_II
 
     character(len=*), intent(in) :: NameHemiIn
 
@@ -65,12 +67,6 @@ contains
        call CON_stop(NameSub//' : unrecognized hemisphere - '//&
                 NameHemiIn)
     end if
-
-    ! Calculate monoenergetic flux (same as MAGNIT)
-    NfluxDiffe_II = EfluxDiffe_II / AvgEDiffe_II / cKEV
-    where(NfluxDiffe_II < 1E11) AvgEDiffe_II = ImAveEFloor
-
-    ElectronTemp_II = 2.0 * AvgEDiffe_II * cKEV ! kEV to J
 
     where(Poynting_II < 0) Poynting_II = 0
 
@@ -93,18 +89,14 @@ contains
     end if
 
     if(.not. DoUseGMPe) then
-      where(OCFL_II < 0)
-        MagPe_II = MagP_II
-        MagNe_II = MagNp_II
-      end where
+      MagPe_II = MagP_II * ratioPe
+      MagNe_II = MagNp_II
     else
-      where(OCFL_II < 0)
-        MagNe_II = MagNp_II
-      end where
-   end if
+      MagNe_II = MagNp_II
+    end if
    
-
-    ! Calculate diffuse precipitation: protons.
+   where(ImBoundary_II > 1) ImBoundary_II = 1
+   ! Calculate diffuse precipitation: protons.
     AvgEDiffi_II  = MagP_II / MagNp_II  ! Temp = P/nk in Joules
     NfluxDiffi_II = ConeNfluxDifp * MagNp_II * AvgEDiffi_II**0.5 / &
                     sqrt(2 * cPi * cProtonMass)  ! units of #/m2/s
@@ -114,29 +106,24 @@ contains
     ! Recalc to make consistent with ConeFactors (and get units of keV)
     AvgEDiffi_II = EfluxDiffi_II / (NfluxDiffi_II * cKEV)
 
-    where(OCFL_II < 0) 
-      ElectronTemp_II  = MagPe_II / MagNe_II  ! T = P/nk in Joules
-      NfluxDiffe_II = ConeNfluxDife * MagNe_II * ElectronTemp_II**0.5 / &
+    MhdElectronTemp_II  = MagPe_II / MagNe_II  ! T = P/nk in Joules
+    MhdNfluxDiffe_II = ConeNfluxDife * MagNe_II * MhdElectronTemp_II**0.5 / &
                   sqrt(2 * cPi * cElectronMass)  ! units of #/m2/s
-      ! units of W/m2
-      EfluxDiffe_II = 2 * NfluxDiffe_II * ElectronTemp_II * &
-              ConeEfluxDife/ConeNfluxDife
-      ! Recalc to make consistent with ConeFactors (and get units of keV)
-      AvgEDiffe_II = EfluxDiffe_II / (NfluxDiffe_II * cKEV)
+    ! units of W/m2
+    MhdAvgEDiffe_II = MhdElectronTemp_II * cKEV * ConeEfluxDife/ConeNfluxDife
+
+    call monoenergetic_flux(FAC_II, OCFL_II, MhdNfluxDiffe_II, MhdElectronTemp_II, &
+            MhdAvgEDiffe_II, LatIn_II, MhdEfluxMono_II, MhdAvgEMono_II, &
+            PotOut_II=Potential_II)
+
+    where(ImBoundary_II < 1 .and. Potential_II > 0)
+       EfluxMono_II = MhdEfluxMono_II
+       AvgEMono_II  = MhdAvgEMono_II
+    elsewhere
+       EfluxMono_II = EfluxDiffe_II
+       AvgEMono_II  = AvgEDiffe_II
     end where
-
-    ! Smooth area between closed and open field lines
-    if (DoPolarCapSmoothing) then
-      call smooth_polar_cap(AvgEDiffe_II, OCFL_II, NameHemiIn)
-      call smooth_polar_cap(AvgEDiffi_II, OCFL_II, NameHemiIn)
-      call smooth_polar_cap(EfluxDiffe_II, OCFL_II, NameHemiIn, ImBoundary_II)
-      call smooth_polar_cap(EfluxDiffi_II, OCFL_II, NameHemiIn, ImBoundary_II)
-    end if
-
-    call monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, ElectronTemp_II, &
-            AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, &
-            PotOut_II=Potential_II, ImIn_II=ImBoundary_II)
-
+    
     call broadband_flux(Poynting_II, EfluxBbnd_II, AvgEBbnd_II)
 
     if (DoUseIMSpectrum) then
