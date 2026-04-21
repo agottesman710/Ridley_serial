@@ -188,7 +188,7 @@ module ModMagnit
   !============================================================================
   subroutine monoenergetic_flux(FAC_II, OCFL_II, NfluxDiffe_II, &
           ElectronTemp_II, AvgEDiffe_II, LatIn_II, EfluxMono_II, AvgEMono_II, &
-          PotOut_II, ImIn_II)
+          PotOut_II)
 
     use ModConst, ONLY: cKEV
     use ModPlanetConst, ONLY: rPlanet_I, IonoHeightPlanet_I, Earth_
@@ -196,8 +196,7 @@ module ModMagnit
     real, intent(out), dimension(IONO_nTheta, IONO_nPsi) :: EfluxMono_II, &
                                                             AvgEMono_II
     real, intent(out), dimension(IONO_nTheta, IONO_nPsi), optional :: PotOut_II
-    real, intent(in), dimension(IONO_nTheta, IONO_nPsi), optional :: ImIn_II  
-
+    
     ! Import Hemispheric Latitudes for Magnetic Field Calculations
     real, intent(in), dimension(IONO_nTheta, IONO_nPsi) :: FAC_II, LatIn_II, &
             NfluxDiffe_II, AvgEDiffe_II, ElectronTemp_II, OCFL_II
@@ -225,19 +224,13 @@ module ModMagnit
         PrecipRatio_II = MirrorRatio_II
     end where
 
-    if(present(ImIn_II)) then
-        ImBoundary_II = ImIn_II
-    else 
-        ImBoundary_II = 0
-    end if
-
     ! Potential calculations only valid where 1 <= NumCoefficient <= MirrorRatio
-    where(1 <= PrecipRatio_II .and. OCFL_II > 0 .and. ImBoundary_II == 0)
+    where(1 <= PrecipRatio_II .and. OCFL_II > 0)
       ! Put it all together into potential
       Potential_II = ElectronTemp_II / cElectronCharge * (1 - MirrorRatio_II) &
               * LOG((MirrorRatio_II - PrecipRatio_II) / (MirrorRatio_II - 1))
-    elsewhere(1 <= PrecipRatio_II .and. OCFL_II < 0 .and. ImBoundary_II == 0)
-      Potential_II = ElectronTemp_II * (PrecipRatio_II - 1)
+    elsewhere(1 <= PrecipRatio_II .and. OCFL_II < 0)
+      Potential_II = ElectronTemp_II / cElectronCharge * (PrecipRatio_II - 1)
     elsewhere
       NfluxMono_II = NfluxDiffe_II
     end where
