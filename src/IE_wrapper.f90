@@ -703,7 +703,7 @@ contains
 
     use ModProcIE
     use ModIonosphere
-    use ModConductance, ONLY: NameAuroraMod
+    use ModConductance, ONLY: NameAuroraMod, polar_convolution, UsePrecipSmoothing
 
 
     integer,          intent(in)  :: iSize, jSize, nVarIn
@@ -753,20 +753,36 @@ contains
        case('pot')
           Buffer_IIV(:,:,iVar) = IONO_Phi
        case('def')
+          if (UsePrecipSmoothing) &
+               call polar_convolution(IONO_DIFFE_EFlux, iSize, jSize)
           Buffer_IIV(:,:,iVar) = IONO_DIFFE_EFlux
        case('dae')
+          if (UsePrecipSmoothing) &
+               call polar_convolution(IONO_DIFFE_Ave_E, iSize, jSize)
           Buffer_IIV(:,:,iVar) = IONO_DIFFE_Ave_E
        case('mef')
+          if (UsePrecipSmoothing) &
+               call polar_convolution(IONO_MONO_EFlux, iSize, jSize)
           Buffer_IIV(:,:,iVar) = IONO_MONO_EFlux
        case('mae')
+          if (UsePrecipSmoothing) &
+               call polar_convolution(IONO_MONO_Ave_E, iSize, jSize)
           Buffer_IIV(:,:,iVar) = IONO_MONO_Ave_E
        case('wef')
+          if (UsePrecipSmoothing) &
+               call polar_convolution(IONO_BBND_EFlux, iSize, jSize)
           Buffer_IIV(:,:,iVar) = IONO_BBND_EFlux
        case('wae')
+          if (UsePrecipSmoothing) &
+               call polar_convolution(IONO_BBND_Ave_E, iSize, jSize)
           Buffer_IIV(:,:,iVar) = IONO_BBND_Ave_E
        case('ief')
+          if (UsePrecipSmoothing) &
+               call polar_convolution(IONO_DIFFI_EFlux, iSize, jSize)
           Buffer_IIV(:,:,iVar) = IONO_DIFFI_EFlux
        case('iae')
+          if (UsePrecipSmoothing) &
+               call polar_convolution(IONO_DIFFI_Ave_E, iSize, jSize)
           Buffer_IIV(:,:,iVar) = IONO_DIFFI_Ave_E
        case default
           call CON_stop(NameSub//' invalid NameVar='//NameVar_V(iVar))
